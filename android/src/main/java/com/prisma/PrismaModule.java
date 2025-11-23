@@ -122,7 +122,17 @@ public class PrismaModule extends PrismaSpec {
   public void install() {
     ReactApplicationContext context = this.getReactApplicationContext();
     long jsContextPointer = context.getJavaScriptContextHolder().get();
-    CallInvokerHolderImpl jsCallInvokerHolder = (CallInvokerHolderImpl)context.getCatalystInstance().getJSCallInvokerHolder();
+    if (jsContextPointer == 0) {
+      throw new RuntimeException("JSI runtime pointer is null. Make sure Hermes is enabled and the runtime is initialized before calling install().");
+    }
+    CallInvokerHolderImpl jsCallInvokerHolder;
+    if (context.getJSCallInvokerHolder() != null) {
+      jsCallInvokerHolder = (CallInvokerHolderImpl) context.getJSCallInvokerHolder();
+    } else if (context.getCatalystInstance() != null) {
+      jsCallInvokerHolder = (CallInvokerHolderImpl) context.getCatalystInstance().getJSCallInvokerHolder();
+    } else {
+      throw new RuntimeException("JSCallInvokerHolder is not available yet.");
+    }
     String dbPath = context.getDatabasePath("defaultDatabase").getAbsolutePath().replace("defaultDatabase", "");
     String migrationsPath;
     try {
