@@ -81,7 +81,7 @@ void install_cxx(jsi::Runtime &rt,
     }
 
     auto log_callback_fn = [&rt, js_log_callback](std::string msg) {
-      call_invoker->invokeAsync([&rt, msg, &js_log_callback] {
+      call_invoker->invokeAsync([&rt, msg, js_log_callback] {
         js_log_callback->asObject(rt).asFunction(rt).call(
             rt, jsi::String::createFromUtf8(rt, msg));
       });
@@ -130,7 +130,7 @@ void install_cxx(jsi::Runtime &rt,
       auto resolve = std::make_shared<jsi::Value>(rt, args[0]);
       auto reject = std::make_shared<jsi::Value>(rt, args[1]);
 
-      auto task = [&rt, &queryEngineHostObject, body = std::move(body),
+      auto task = [&rt, queryEngineHostObject, body = std::move(body),
                    trace = std::move(trace), tx_id = std::move(tx_id), resolve,
                    reject]() {
         const char *response;
