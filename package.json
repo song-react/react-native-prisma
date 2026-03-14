@@ -1,0 +1,69 @@
+{
+  "name": "@prisma/react-native",
+  "version": "6.1.0-dev.17",
+  "description": "Prisma for react-native",
+  "main": "lib/commonjs/index.js",
+  "module": "lib/module/index.js",
+  "types": "lib/typescript/src/index.d.ts",
+  "react-native": "lib/module/index.js",
+  "source": "lib/module/index.js",
+  "files": [
+    "lib",
+    "android",
+    "ios",
+    "cpp",
+    "engines",
+    "plugin/build",
+    "src/NativePrisma.ts",
+    "*.podspec",
+    "copy-migrations.sh",
+    "react-native-prisma.gradle",
+    "app.plugin.js",
+    "expo.d.ts",
+    "expo.js",
+    "README.md"
+  ],
+  "keywords": [
+    "react-native",
+    "ios",
+    "android"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prisma/react-native-prisma.git"
+  },
+  "author": "Oscar Franco <ospfranco@gmail.com> (https://github.com/ospfranco)",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/prisma/react-native-prisma/issues"
+  },
+  "homepage": "https://github.com/prisma/react-native-prisma#readme",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "peerDependencies": {
+    "@prisma/client": "*",
+    "expo": ">=49.0.0",
+    "react": "*",
+    "react-native": "*",
+    "react-native-quick-base64": "*"
+  },
+  "peerDependenciesMeta": {
+    "expo": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "react-native-quick-base64": "^2.0.8",
+    "react-native-url-polyfill": "^2.0.0"
+  },
+  "engines": {
+    "node": ">= 18.0.0"
+  },
+  "codegenConfig": {
+    "name": "RNPrismaSpec",
+    "type": "modules",
+    "jsSrcsDir": "src"
+  }
+}
