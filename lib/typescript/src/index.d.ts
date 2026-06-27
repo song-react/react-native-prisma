@@ -1,6 +1,7 @@
 import 'react-native-url-polyfill/auto';
 export { reactiveHooksExtension } from './ReactiveHooksExtension';
 export { reactiveQueriesExtension } from './ReactiveQueriesExtension';
+export { synchronousQueriesExtension } from './SyncQueriesExtension';
 declare global {
     var __PrismaProxy: PrismaProxy | undefined;
 }
@@ -17,7 +18,8 @@ type QueryEngineObject = object;
 type PrismaProxy = {
     create: (options: PrismaCreateOptions) => QueryEngineObject;
     connect: (engine: QueryEngineObject, trace: string) => void;
-    execute: (engine: QueryEngineObject, body: string, headers: string, txId: string) => Promise<string>;
+    execute: (engine: QueryEngineObject, body: string, headers: string, txId?: string) => Promise<string>;
+    executeSync?: (engine: QueryEngineObject, body: string, headers: string, txId?: string) => string;
     startTransaction: (engine: QueryEngineObject, body: string, hdears: string) => string;
     commitTransaction: (engine: QueryEngineObject, txId: string, headers: string) => string;
     rollbackTransaction: (engine: QueryEngineObject, txId: string, headers: string) => string;

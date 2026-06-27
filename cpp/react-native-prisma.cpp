@@ -4,6 +4,7 @@
 #include "macros.h"
 #include "query_engine.h"
 #include "utils.h"
+#include <cstdlib>
 #include <iostream>
 #include <unordered_map>
 
@@ -17,6 +18,12 @@ std::shared_ptr<react::CallInvoker> call_invoker;
 std::unordered_map<std::string, std::shared_ptr<QueryEngineHostObject>>
     engine_map;
 ThreadPool thread_pool;
+
+static void free_engine_string(const char *value) {
+  if (value != nullptr) {
+    free(const_cast<char *>(value));
+  }
+}
 
 // Pure C function that is used by Rust to call the log callback
 extern void log_callback(const char *id, const char *msg) {
@@ -147,8 +154,10 @@ void install_cxx(jsi::Runtime &rt,
         call_invoker->invokeAsync([&rt, response = std::move(response),
                                    error_ptr, resolve, reject]() {
           if (error_ptr == nullptr) {
+            auto js_response = jsi::String::createFromUtf8(rt, response);
+            free_engine_string(response);
             resolve->asObject(rt).asFunction(rt).call(
-                rt, jsi::String::createFromUtf8(rt, response));
+                rt, std::move(js_response));
           } else {
             auto errCtr = rt.global().getPropertyAsFunction(rt, "Error");
             std::string error_message(error_ptr);
@@ -170,6 +179,38 @@ void install_cxx(jsi::Runtime &rt,
     return promise;
   });
 
+  auto execute_sync = HOSTFN("executeSync", 4) {
+    std::shared_ptr<QueryEngineHostObject> queryEngineHostObject =
+        args[0].asObject(rt).asHostObject<QueryEngineHostObject>(rt);
+    std::string body = args[1].asString(rt).utf8(rt);
+    std::string trace = args[2].asString(rt).utf8(rt);
+    std::string tx_id;
+    if (count > 3 && args[3].isString()) {
+      tx_id = args[3].asString(rt).utf8(rt);
+    }
+
+    const char *response = nullptr;
+    char *error_ptr = nullptr;
+
+    if (!tx_id.empty()) {
+      response = prisma_query(queryEngineHostObject->engine, body.c_str(),
+                              trace.c_str(), tx_id.c_str(), &error_ptr);
+    } else {
+      response = prisma_query(queryEngineHostObject->engine, body.c_str(),
+                              trace.c_str(), nullptr, &error_ptr);
+    }
+
+    if (error_ptr == nullptr) {
+      auto js_response = jsi::String::createFromUtf8(rt, response);
+      free_engine_string(response);
+      return js_response;
+    }
+
+    std::string error_message(error_ptr);
+    free(error_ptr);
+    throw std::runtime_error(error_message);
+  });
+
   auto start_transaction = HOSTFN("startTransaction", 3) {
     std::shared_ptr<QueryEngineHostObject> queryEngineHostObject =
         args[0].asObject(rt).asHostObject<QueryEngineHostObject>(rt);
@@ -183,7 +224,9 @@ void install_cxx(jsi::Runtime &rt,
       throw std::runtime_error("prisma engine did not start transaction");
     }
 
-    return jsi::String::createFromUtf8(rt, std::string(response));
+    auto js_response = jsi::String::createFromUtf8(rt, response);
+    free_engine_string(response);
+    return js_response;
   });
 
   auto commit_transaction = HOSTFN("commitTransaction", 3) {
@@ -199,7 +242,9 @@ void install_cxx(jsi::Runtime &rt,
       throw std::runtime_error("prisma engine did not commit transaction");
     }
 
-    return jsi::String::createFromUtf8(rt, std::string(response));
+    auto js_response = jsi::String::createFromUtf8(rt, response);
+    free_engine_string(response);
+    return js_response;
   });
 
   auto rollback_transaction = HOSTFN("rollbackTransaction", 3) {
@@ -215,7 +260,9 @@ void install_cxx(jsi::Runtime &rt,
       throw std::runtime_error("prisma engine did not rollback transaction");
     }
 
-    return jsi::String::createFromUtf8(rt, std::string(response));
+    auto js_response = jsi::String::createFromUtf8(rt, response);
+    free_engine_string(response);
+    return js_response;
   });
 
   auto disconnect = HOSTFN("disconnect", 2) {
@@ -253,6 +300,7 @@ void install_cxx(jsi::Runtime &rt,
   module.setProperty(rt, "create", std::move(create));
   module.setProperty(rt, "connect", std::move(connect));
   module.setProperty(rt, "execute", std::move(execute));
+  module.setProperty(rt, "executeSync", std::move(execute_sync));
   module.setProperty(rt, "startTransaction", std::move(start_transaction));
   module.setProperty(rt, "commitTransaction", std::move(commit_transaction));
   module.setProperty(rt, "rollbackTransaction",

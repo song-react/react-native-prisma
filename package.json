@@ -17,12 +17,16 @@
     "src/NativePrisma.ts",
     "*.podspec",
     "copy-migrations.sh",
+    "scripts/patch-prisma-runtime.cjs",
     "react-native-prisma.gradle",
     "app.plugin.js",
     "expo.d.ts",
     "expo.js",
     "README.md"
   ],
+  "scripts": {
+    "postinstall": "node ./scripts/patch-prisma-runtime.cjs"
+  },
   "keywords": [
     "react-native",
     "ios",
