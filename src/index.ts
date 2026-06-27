@@ -7,6 +7,7 @@ global.btoa = btoa;
 
 export { reactiveHooksExtension } from './ReactiveHooksExtension';
 export { reactiveQueriesExtension } from './ReactiveQueriesExtension';
+export { synchronousQueriesExtension } from './SyncQueriesExtension';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -32,6 +33,7 @@ if (!global.__PrismaProxy) {
 
 // Wrap the create function to stringify the env variables if necessary
 const ogCreate = __PrismaProxy!.create;
+
 global.__PrismaProxy = {
   ...global.__PrismaProxy,
   create: (options: PrismaCreateOptions): QueryEngineObject => {
@@ -64,8 +66,14 @@ type PrismaProxy = {
     engine: QueryEngineObject,
     body: string,
     headers: string,
-    txId: string
+    txId?: string
   ) => Promise<string>;
+  executeSync?: (
+    engine: QueryEngineObject,
+    body: string,
+    headers: string,
+    txId?: string
+  ) => string;
   startTransaction: (
     engine: QueryEngineObject,
     body: string,
