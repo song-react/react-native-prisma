@@ -2,13 +2,14 @@
 
 面向 Expo 与 React Native 新架构的 Prisma 7.9 同步本地数据库方案。
 
-- 使用 Prisma 7 Query Compiler 与 Driver Adapter，不再携带旧版原生 Query Engine。
+- 将 Prisma 7.9 Query Compiler 精简为 SQLite 原生库，通过 Expo Modules JSI 同步调用。
 - 通过 `expo-sqlite` 的 JSI 同步接口直接读写 SQLite。
 - CRUD、聚合、关联查询和查询计划事务直接返回结果，不为每次本地查询额外创建 Promise。
 - 避免数据库已经返回、界面仍等待 Promise 调度后才更新的问题。
-- 当前开发基线为 Expo 58、React Native 0.87、Prisma 7.9.1。
+- 支持 Expo 默认 Hermes，不在运行时加载 WebAssembly，也不携带旧版完整 Query Engine。
+- 当前 iOS 开发基线为 Expo 58、React Native 0.87、Prisma 7.9.1。
 
-Prisma 7 Query Compiler 使用 WebAssembly，因此 JavaScript Runtime 必须支持 WebAssembly。当前请使用 JSC，暂不支持 Hermes。
+`release` 已包含 iPhone 与 Apple Silicon 模拟器的原生 Query Compiler；安装后需要重新生成原生工程或执行 `bun ios`。
 
 ## 安装
 
@@ -47,7 +48,7 @@ model User {
 }
 ```
 
-`prisma-react-native` 会移除生成客户端中的 Node 专用依赖，并准备 React Native 可用的同步 Runtime。
+`prisma-react-native` 会移除生成客户端中的 Node 与 WebAssembly 依赖，并接入 Hermes 可用的同步原生 Query Compiler。
 
 ## Demo
 
@@ -103,4 +104,4 @@ import { PrismaExpoSQLite } from '@prisma/react-native/expo-sqlite';
 ## 发布分支
 
 - `main`：完整 TypeScript 源码。
-- `release`：编译后的 CommonJS、ESM、类型声明及混淆 JS，可直接作为 Git 依赖安装。
+- `release`：iOS 原生 Query Compiler、CommonJS、ESM、类型声明及混淆 JS，可直接作为 Git 依赖安装。
