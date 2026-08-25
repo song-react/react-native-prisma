@@ -43,34 +43,33 @@ model User {
 ```json
 {
   "scripts": {
-    "postinstall": "prisma generate && prisma-react-native generated/prisma"
+    "db:generate": "prisma generate && prisma-react-native generated/prisma",
+    "db:migrate": "prisma migrate dev && bun db:generate",
+    "db:push": "prisma db push && bun db:generate",
+    "db:studio": "prisma studio",
+    "postinstall": "bun db:generate && prisma-react-native generated/prisma"
   }
 }
 ```
 
 `prisma-react-native` 会移除生成客户端中的 Node 与 WebAssembly 依赖，并接入 Hermes 可用的同步原生 Query Compiler。
+它还会把 `prisma/migrations/*/migration.sql` 嵌入生成的 Client，供设备端首次启动和版本升级时执行。
 
 ## Demo
 
 ```ts
 import { PrismaClient } from './generated/prisma/client';
-import { queriesExtension } from '@prisma/react-native';
-import { PrismaExpoSQLite } from '@prisma/react-native/expo-sqlite';
+import {
+  PrismaExpoSQLite,
+  queriesExtension,
+} from '@prisma/react-native';
 
-const adapter = new PrismaExpoSQLite('app.db');
+export const db = new PrismaClient({
+  adapter: new PrismaExpoSQLite('app.db'),
+}).$extends(queriesExtension());
 
-adapter.executeScript(`
-  CREATE TABLE IF NOT EXISTS "User" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    "name" TEXT NOT NULL
-  );
-`);
-
-const client = new PrismaClient({ adapter });
-
-// App 启动时等待一次，后续模型操作全部同步返回。
-export const databaseReady = client.$connect();
-export const db = client.$extends(queriesExtension());
+// 自动应用尚未执行的迁移，并完成首次连接。
+export const databaseReady = db.$applyPendingMigrations();
 ```
 
 连接完成后直接同步调用：
@@ -91,15 +90,10 @@ const start = async () => {
 
 ```ts
 import { queriesExtension } from '@prisma/react-native';
-import type {
-  DriverAdapter,
-  DriverTransaction,
-  QueryableDriver,
-} from '@prisma/react-native';
-import { PrismaExpoSQLite } from '@prisma/react-native/expo-sqlite';
+import { PrismaExpoSQLite } from '@prisma/react-native';
 ```
 
-`PrismaExpoSQLite` 支持同步查询、写入、批量 SQL、事务提交和回滚。交互式事务与 PostgreSQL、MySQL 等网络数据库仍应使用异步 API；同步接口只适用于能够在当前进程立即返回的本地驱动。
+开发时使用 `prisma migrate dev` 生成迁移；`prisma db push` 只更新开发机数据库，不会更新用户设备。App 启动时调用一次 `$applyPendingMigrations()`，之后 CRUD、聚合和查询计划事务均同步返回。
 
 ## 发布分支
 

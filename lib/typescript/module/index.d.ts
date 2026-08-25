@@ -1,3 +1,4 @@
 export { queriesExtension } from './QueriesExtension';
-export type { DriverAdapter, DriverTransaction, QueryableDriver, } from './DriverAdapter';
+export { PrismaExpoSQLite } from './ExpoSQLiteAdapter';
+export { NativeQueryCompiler } from './native';
 //# sourceMappingURL=index.d.ts.map

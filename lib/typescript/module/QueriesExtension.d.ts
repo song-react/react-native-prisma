@@ -19,5 +19,7 @@ export declare const queriesExtension: () => (client: any) => import("@prisma/cl
         aggregate<T, A>(this: T, args: Prisma.Exact<A, Prisma.Args<T, "aggregate">>): Prisma.Result<T, A, "aggregate">;
         groupBy<T, A>(this: T, args: Prisma.Exact<A, Prisma.Args<T, "groupBy">>): Prisma.Result<T, A, "groupBy">;
     };
-}, {}, {}> & import("@prisma/client/runtime/client").DefaultArgs>;
+}, {}, {
+    $applyPendingMigrations: () => Promise<void>;
+}> & import("@prisma/client/runtime/client").DefaultArgs>;
 //# sourceMappingURL=QueriesExtension.d.ts.map
