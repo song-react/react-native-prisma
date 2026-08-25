@@ -14,12 +14,23 @@ import {
   type SQLiteBindValue,
   type SQLiteDatabase,
 } from 'expo-sqlite';
-import type {
-  DriverAdapter,
-  DriverTransaction,
-} from './DriverAdapter';
 
 type Config = { url: string; directory?: string };
+type Migration = { name: string; checksum: string; sql: string };
+
+interface QueryableDriver {
+  queryRawSync(query: SqlQuery): SqlResultSet;
+  executeRawSync(query: SqlQuery): number;
+}
+
+interface DriverTransaction extends Transaction, QueryableDriver {
+  commitSync(): void;
+  rollbackSync(): void;
+}
+
+interface DriverAdapter extends SqlDriverAdapter, QueryableDriver {
+  startTransactionSync(isolationLevel?: IsolationLevel): DriverTransaction;
+}
 
 const mapArg = (value: unknown, type: ArgType): SQLiteBindValue => {
   if (value == null) return null;
@@ -158,7 +169,7 @@ class Queryable {
 
 class ExpoSQLiteTransaction
   extends Queryable
-  implements Transaction, DriverTransaction
+  implements DriverTransaction
 {
   readonly options = { usePhantomQuery: false };
 
@@ -183,18 +194,14 @@ class ExpoSQLiteTransaction
 
 class ExpoSQLiteAdapter
   extends Queryable
-  implements SqlDriverAdapter, DriverAdapter
+  implements DriverAdapter
 {
   constructor(db: SQLiteDatabase, private readonly onDispose: () => void) {
     super(db);
   }
 
-  executeScriptSync(script: string) {
-    this.db.execSync(script);
-  }
-
   executeScript(script: string) {
-    this.executeScriptSync(script);
+    this.db.execSync(script);
     return Promise.resolve();
   }
 
@@ -221,6 +228,52 @@ class ExpoSQLiteAdapter
     return { maxBindValues: 999, supportsRelationJoins: false };
   }
 
+  applyPendingMigrations(migrations: readonly Migration[]) {
+    this.db.execSync(`
+      CREATE TABLE IF NOT EXISTS "_prisma_migrations" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "checksum" TEXT NOT NULL,
+        "finished_at" DATETIME,
+        "migration_name" TEXT NOT NULL,
+        "logs" TEXT,
+        "rolled_back_at" DATETIME,
+        "started_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "applied_steps_count" INTEGER UNSIGNED NOT NULL DEFAULT 0
+      )
+    `);
+
+    for (const migration of migrations) {
+      const applied = this.db.getFirstSync<{ checksum: string }>(
+        `SELECT "checksum" FROM "_prisma_migrations"
+         WHERE "migration_name" = ?
+           AND "finished_at" IS NOT NULL
+           AND "rolled_back_at" IS NULL`,
+        migration.name
+      );
+      if (applied) {
+        if (applied.checksum !== migration.checksum) {
+          throw new Error(`Migration ${migration.name} was modified after applying`);
+        }
+        continue;
+      }
+
+      this.db.execSync('BEGIN IMMEDIATE');
+      try {
+        this.db.execSync(migration.sql);
+        this.db.runSync(
+          `INSERT INTO "_prisma_migrations"
+            ("id", "checksum", "finished_at", "migration_name", "applied_steps_count")
+           VALUES (?, ?, CURRENT_TIMESTAMP, ?, 1)`,
+          [migration.name, migration.checksum, migration.name]
+        );
+        this.db.execSync('COMMIT');
+      } catch (error) {
+        this.db.execSync('ROLLBACK');
+        throw error;
+      }
+    }
+  }
+
   dispose() {
     this.db.closeSync();
     this.onDispose();
@@ -232,6 +285,7 @@ export class PrismaExpoSQLite implements SqlDriverAdapterFactory {
   readonly provider = 'sqlite' as const;
   readonly adapterName = '@prisma/react-native';
   #adapter?: ExpoSQLiteAdapter;
+  #migrations: readonly Migration[] = [];
 
   constructor(private readonly config: Config | string) {}
 
@@ -256,8 +310,12 @@ export class PrismaExpoSQLite implements SqlDriverAdapterFactory {
     return this.#adapter;
   }
 
-  executeScript(script: string) {
-    this.connectAdapter().executeScriptSync(script);
+  setMigrations(migrations: readonly Migration[]) {
+    this.#migrations = migrations;
+  }
+
+  applyPendingMigrations() {
+    this.connectAdapter().applyPendingMigrations(this.#migrations);
   }
 
   connect() {

@@ -141,6 +141,10 @@ export const queriesExtension = () =>
   Prisma.defineExtension((client) =>
     client.$extends({
       name: 'prisma-react-native-queries',
+      client: {
+        $applyPendingMigrations: (): Promise<void> =>
+          (client as any).$applyPendingMigrations(),
+      },
       model: {
         $allModels: {
           findUnique<T, A>(
