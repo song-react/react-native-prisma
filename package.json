@@ -8,7 +8,7 @@
   "react-native": "src/index",
   "source": "src/index",
   "bin": {
-    "prisma-react-native": "scripts/prepare-client.cjs"
+    "prisma-react-native": "scripts/prepare-prisma-client.cjs"
   },
   "exports": {
     ".": {
@@ -42,7 +42,7 @@
     "!**/__mocks__",
     "!**/.*",
     "scripts/patch-prisma-runtime.cjs",
-    "scripts/prepare-client.cjs",
+    "scripts/prepare-prisma-client.cjs",
     "react-native.config.js"
   ],
   "scripts": {

@@ -15,9 +15,9 @@ import {
   type SQLiteDatabase,
 } from 'expo-sqlite';
 import type {
-  SynchronousDriverAdapter,
-  SynchronousTransaction,
-} from './SyncDriverAdapter';
+  DriverAdapter,
+  DriverTransaction,
+} from './DriverAdapter';
 
 type Config = { url: string; directory?: string };
 
@@ -158,7 +158,7 @@ class Queryable {
 
 class ExpoSQLiteTransaction
   extends Queryable
-  implements Transaction, SynchronousTransaction
+  implements Transaction, DriverTransaction
 {
   readonly options = { usePhantomQuery: false };
 
@@ -183,7 +183,7 @@ class ExpoSQLiteTransaction
 
 class ExpoSQLiteAdapter
   extends Queryable
-  implements SqlDriverAdapter, SynchronousDriverAdapter
+  implements SqlDriverAdapter, DriverAdapter
 {
   constructor(db: SQLiteDatabase, private readonly onDispose: () => void) {
     super(db);
@@ -235,7 +235,7 @@ export class PrismaExpoSQLite implements SqlDriverAdapterFactory {
 
   constructor(private readonly config: Config | string) {}
 
-  connectSync() {
+  private connectAdapter() {
     if (this.#adapter) return this.#adapter;
     const url = typeof this.config === 'string' ? this.config : this.config.url;
     const directory =
@@ -256,11 +256,11 @@ export class PrismaExpoSQLite implements SqlDriverAdapterFactory {
     return this.#adapter;
   }
 
-  executeScriptSync(script: string) {
-    this.connectSync().executeScriptSync(script);
+  executeScript(script: string) {
+    this.connectAdapter().executeScriptSync(script);
   }
 
   connect() {
-    return Promise.resolve(this.connectSync());
+    return Promise.resolve(this.connectAdapter());
   }
 }

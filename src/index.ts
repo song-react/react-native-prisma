@@ -1,6 +1,6 @@
-export { synchronousQueriesExtension } from './SyncQueriesExtension';
+export { queriesExtension } from './QueriesExtension';
 export type {
-  SynchronousDriverAdapter,
-  SynchronousQueryable,
-  SynchronousTransaction,
-} from './SyncDriverAdapter';
+  DriverAdapter,
+  DriverTransaction,
+  QueryableDriver,
+} from './DriverAdapter';

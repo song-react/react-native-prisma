@@ -2591,7 +2591,7 @@ __metadata:
     expo-sqlite:
       optional: true
   bin:
-    prisma-react-native: scripts/prepare-client.cjs
+    prisma-react-native: scripts/prepare-prisma-client.cjs
   languageName: unknown
   linkType: soft
 

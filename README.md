@@ -48,13 +48,13 @@ Generate and prepare the client for React Native:
 
 ```ts
 import { PrismaClient } from './generated/prisma/client';
-import { synchronousQueriesExtension } from '@prisma/react-native';
+import { queriesExtension } from '@prisma/react-native';
 import { PrismaExpoSQLite } from '@prisma/react-native/expo-sqlite';
 
 const adapter = new PrismaExpoSQLite('app.db');
 const client = new PrismaClient({ adapter });
 
-export const db = client.$extends(synchronousQueriesExtension());
+export const db = client.$extends(queriesExtension());
 export const initializeDatabase = () => client.$connect();
 ```
 
@@ -65,8 +65,8 @@ const created = db.user.create({ data: { name: 'Ada' } });
 const users = db.user.findMany();
 ```
 
-Reads, writes, aggregates, relation queries, and query-plan transactions are synchronous. Failed nested writes roll back synchronously. For idempotent startup SQL, run `adapter.executeScriptSync(sql)` before connecting the client.
+Reads, writes, aggregates, relation queries, and query-plan transactions are synchronous. Failed nested writes roll back synchronously. For idempotent startup SQL, run `adapter.executeScript(sql)` before connecting the client.
 
 ## Other local databases
 
-Implement and pass a normal Prisma driver adapter that also satisfies `SynchronousDriverAdapter`. Its query, write, and transaction methods must execute synchronously. No database-specific code is built into the synchronous extension.
+Implement and pass a normal Prisma driver adapter that also satisfies `DriverAdapter`. Its query, write, and transaction methods must execute synchronously. No database-specific code is built into the extension.

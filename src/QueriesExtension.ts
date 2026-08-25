@@ -4,7 +4,7 @@ import {
   serializeJsonQuery,
 } from '@prisma/client/runtime/client';
 
-const requestSync = (
+const request = (
   client: any,
   modelName: string,
   action: Action,
@@ -137,17 +137,17 @@ const modelNameOf = (client: any, model: unknown) => {
   return modelName;
 };
 
-export const synchronousQueriesExtension = () =>
+export const queriesExtension = () =>
   Prisma.defineExtension((client) =>
     client.$extends({
-      name: 'prisma-react-native-synchronous-queries',
+      name: 'prisma-react-native-queries',
       model: {
         $allModels: {
           findUnique<T, A>(
             this: T,
             args: Prisma.Exact<A, Prisma.Args<T, 'findUnique'>>
           ): Prisma.Result<T, A, 'findUnique'> {
-            return requestSync(
+            return request(
               client,
               modelNameOf(client, this),
               'findUnique',
@@ -158,7 +158,7 @@ export const synchronousQueriesExtension = () =>
             this: T,
             args: Prisma.Exact<A, Prisma.Args<T, 'findUniqueOrThrow'>>
           ): Prisma.Result<T, A, 'findUniqueOrThrow'> {
-            return requestSync(
+            return request(
               client,
               modelNameOf(client, this),
               'findUniqueOrThrow',
@@ -169,7 +169,7 @@ export const synchronousQueriesExtension = () =>
             this: T,
             args?: Prisma.Exact<A, Prisma.Args<T, 'findFirst'>>
           ): Prisma.Result<T, A, 'findFirst'> {
-            return requestSync(
+            return request(
               client,
               modelNameOf(client, this),
               'findFirst',
@@ -180,7 +180,7 @@ export const synchronousQueriesExtension = () =>
             this: T,
             args?: Prisma.Exact<A, Prisma.Args<T, 'findFirstOrThrow'>>
           ): Prisma.Result<T, A, 'findFirstOrThrow'> {
-            return requestSync(
+            return request(
               client,
               modelNameOf(client, this),
               'findFirstOrThrow',
@@ -191,7 +191,7 @@ export const synchronousQueriesExtension = () =>
             this: T,
             args?: Prisma.Exact<A, Prisma.Args<T, 'findMany'>>
           ): Prisma.Result<T, A, 'findMany'> {
-            return requestSync(
+            return request(
               client,
               modelNameOf(client, this),
               'findMany',
@@ -202,13 +202,13 @@ export const synchronousQueriesExtension = () =>
             this: T,
             args: Prisma.Exact<A, Prisma.Args<T, 'create'>>
           ): Prisma.Result<T, A, 'create'> {
-            return requestSync(client, modelNameOf(client, this), 'create', args);
+            return request(client, modelNameOf(client, this), 'create', args);
           },
           createMany<T, A>(
             this: T,
             args: Prisma.Exact<A, Prisma.Args<T, 'createMany'>>
           ): Prisma.Result<T, A, 'createMany'> {
-            return requestSync(
+            return request(
               client,
               modelNameOf(client, this),
               'createMany',
@@ -219,7 +219,7 @@ export const synchronousQueriesExtension = () =>
             this: T,
             args: Prisma.Exact<A, Prisma.Args<T, 'createManyAndReturn'>>
           ): Prisma.Result<T, A, 'createManyAndReturn'> {
-            return requestSync(
+            return request(
               client,
               modelNameOf(client, this),
               'createManyAndReturn',
@@ -230,13 +230,13 @@ export const synchronousQueriesExtension = () =>
             this: T,
             args: Prisma.Exact<A, Prisma.Args<T, 'update'>>
           ): Prisma.Result<T, A, 'update'> {
-            return requestSync(client, modelNameOf(client, this), 'update', args);
+            return request(client, modelNameOf(client, this), 'update', args);
           },
           updateMany<T, A>(
             this: T,
             args: Prisma.Exact<A, Prisma.Args<T, 'updateMany'>>
           ): Prisma.Result<T, A, 'updateMany'> {
-            return requestSync(
+            return request(
               client,
               modelNameOf(client, this),
               'updateMany',
@@ -247,7 +247,7 @@ export const synchronousQueriesExtension = () =>
             this: T,
             args: Prisma.Exact<A, Prisma.Args<T, 'updateManyAndReturn'>>
           ): Prisma.Result<T, A, 'updateManyAndReturn'> {
-            return requestSync(
+            return request(
               client,
               modelNameOf(client, this),
               'updateManyAndReturn',
@@ -258,19 +258,19 @@ export const synchronousQueriesExtension = () =>
             this: T,
             args: Prisma.Exact<A, Prisma.Args<T, 'upsert'>>
           ): Prisma.Result<T, A, 'upsert'> {
-            return requestSync(client, modelNameOf(client, this), 'upsert', args);
+            return request(client, modelNameOf(client, this), 'upsert', args);
           },
           delete<T, A>(
             this: T,
             args: Prisma.Exact<A, Prisma.Args<T, 'delete'>>
           ): Prisma.Result<T, A, 'delete'> {
-            return requestSync(client, modelNameOf(client, this), 'delete', args);
+            return request(client, modelNameOf(client, this), 'delete', args);
           },
           deleteMany<T, A>(
             this: T,
             args?: Prisma.Exact<A, Prisma.Args<T, 'deleteMany'>>
           ): Prisma.Result<T, A, 'deleteMany'> {
-            return requestSync(
+            return request(
               client,
               modelNameOf(client, this),
               'deleteMany',
@@ -282,7 +282,7 @@ export const synchronousQueriesExtension = () =>
             args?: Prisma.Exact<A, Prisma.Args<T, 'count'>>
           ): Prisma.Result<T, A, 'count'> {
             const modelName = modelNameOf(client, this);
-            return requestSync(
+            return request(
               client,
               modelName,
               'count',
@@ -295,7 +295,7 @@ export const synchronousQueriesExtension = () =>
             this: T,
             args: Prisma.Exact<A, Prisma.Args<T, 'aggregate'>>
           ): Prisma.Result<T, A, 'aggregate'> {
-            return requestSync(
+            return request(
               client,
               modelNameOf(client, this),
               'aggregate',
@@ -308,7 +308,7 @@ export const synchronousQueriesExtension = () =>
             this: T,
             args: Prisma.Exact<A, Prisma.Args<T, 'groupBy'>>
           ): Prisma.Result<T, A, 'groupBy'> {
-            return requestSync(
+            return request(
               client,
               modelNameOf(client, this),
               'groupBy',

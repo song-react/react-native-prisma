@@ -42,4 +42,4 @@ if (
 }
 fs.writeFileSync(classPath, portableRuntime);
 
-console.log(`Prepared Prisma 7 client for React Native: ${directory}`);
+console.log(`Prepared generated Prisma 7 client: ${directory}`);
