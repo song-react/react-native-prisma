@@ -1,1 +1,0 @@
-export { PrismaExpoSQLite } from './ExpoSQLiteAdapter';

@@ -2575,7 +2575,6 @@ __metadata:
     expo: "npm:58.0.0-canary-20260812-27f94d4"
     expo-sqlite: "npm:58.0.0-canary-20260812-27f94d4"
     prisma: "npm:7.9.1"
-    react: "npm:19.2.3"
     react-native: "npm:0.87.0"
     react-native-builder-bob: "npm:0.40.13"
     terser: "npm:5.50.0"
@@ -2584,13 +2583,7 @@ __metadata:
     "@prisma/client": ^7.9.1
     expo: ">=52.0.0"
     expo-sqlite: ">=15.0.0"
-    react: ">=18.0.0"
     react-native: ">=0.76.0"
-  peerDependenciesMeta:
-    expo:
-      optional: true
-    expo-sqlite:
-      optional: true
   bin:
     prisma-react-native: scripts/prepare-client.cjs
   languageName: unknown

@@ -21,28 +21,6 @@
         "types": "./lib/typescript/commonjs/index.d.ts",
         "default": "./lib/commonjs/index.js"
       }
-    },
-    "./expo-sqlite": {
-      "react-native": "./src/expo-sqlite.ts",
-      "import": {
-        "types": "./lib/typescript/module/expo-sqlite.d.ts",
-        "default": "./lib/module/expo-sqlite.js"
-      },
-      "require": {
-        "types": "./lib/typescript/commonjs/expo-sqlite.d.ts",
-        "default": "./lib/commonjs/expo-sqlite.js"
-      }
-    },
-    "./native": {
-      "react-native": "./src/native.ts",
-      "import": {
-        "types": "./lib/typescript/module/native.d.ts",
-        "default": "./lib/module/native.js"
-      },
-      "require": {
-        "types": "./lib/typescript/commonjs/native.d.ts",
-        "default": "./lib/commonjs/native.js"
-      }
     }
   },
   "files": [
@@ -90,7 +68,6 @@
     "expo": "58.0.0-canary-20260812-27f94d4",
     "expo-sqlite": "58.0.0-canary-20260812-27f94d4",
     "prisma": "7.9.1",
-    "react": "19.2.3",
     "react-native": "0.87.0",
     "react-native-builder-bob": "0.40.13",
     "terser": "5.50.0",
@@ -100,16 +77,7 @@
     "@prisma/client": "^7.9.1",
     "expo": ">=52.0.0",
     "expo-sqlite": ">=15.0.0",
-    "react": ">=18.0.0",
     "react-native": ">=0.76.0"
-  },
-  "peerDependenciesMeta": {
-    "expo": {
-      "optional": true
-    },
-    "expo-sqlite": {
-      "optional": true
-    }
   },
   "packageManager": "yarn@4.1.1",
   "engines": {
