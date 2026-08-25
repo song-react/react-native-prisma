@@ -3,6 +3,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
+require('./patch-prisma-runtime.cjs');
+
 const directory = path.resolve(process.argv[2] ?? 'generated/prisma');
 const clientPath = path.join(directory, 'client.ts');
 const classPath = path.join(directory, 'internal/class.ts');
@@ -18,13 +20,24 @@ if (portableClient === client && !client.includes("globalThis['__dirname'] = '/'
 fs.writeFileSync(clientPath, portableClient);
 
 let runtime = fs.readFileSync(classPath, 'utf8');
-const portableRuntime = runtime.replace(
-  /async function decodeBase64AsWasm\(wasmBase64: string\): Promise<WebAssembly\.Module> \{[\s\S]*?\n\}/,
-  `function decodeBase64AsWasm(wasmBase64: string): WebAssembly.Module {
-  return new WebAssembly.Module(Uint8Array.from(atob(wasmBase64), value => value.charCodeAt(0)))
+const portableRuntime = (
+  runtime.includes('import { Buffer } from "buffer"')
+    ? runtime
+    : runtime.replace(
+        'import * as runtime from "@prisma/client/runtime/client"',
+        'import { Buffer } from "buffer"\nimport * as runtime from "@prisma/client/runtime/client"'
+      )
+)
+  .replace(
+    /(?:async )?function decodeBase64AsWasm\(wasmBase64: string\): (?:Promise<)?WebAssembly\.Module>? \{[\s\S]*?\n\}/,
+    `function decodeBase64AsWasm(wasmBase64: string): WebAssembly.Module {
+  return new WebAssembly.Module(Buffer.from(wasmBase64, 'base64'))
 }`
-);
-if (portableRuntime === runtime && !runtime.includes('Uint8Array.from(atob(wasmBase64)')) {
+  );
+if (
+  portableRuntime === runtime &&
+  !runtime.includes("Buffer.from(wasmBase64, 'base64')")
+) {
   throw new Error(`Unsupported Prisma client: ${classPath}`);
 }
 fs.writeFileSync(classPath, portableRuntime);

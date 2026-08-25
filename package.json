@@ -134,6 +134,7 @@
     ]
   },
   "dependencies": {
-    "@prisma/driver-adapter-utils": "7.9.1"
+    "@prisma/driver-adapter-utils": "7.9.1",
+    "buffer": "^6.0.3"
   }
 }
