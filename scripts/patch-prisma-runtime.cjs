@@ -73,12 +73,22 @@ function patchPortability(source, runtimePath) {
 
 function patchRuntime(runtimePath) {
   let source = fs.readFileSync(runtimePath, 'utf8');
+  const original = source;
   if (!source.includes('7.9.1')) {
     throw new Error(`Unsupported @prisma/client runtime: ${runtimePath}`);
   }
   const portableSource = patchPortability(source, runtimePath);
-  const changed = portableSource !== source;
   source = portableSource;
+  if (!source.includes('getNativeQueryCompiler')) {
+    source = source.replace(
+      'async loadQueryCompiler(e){let{clientVersion:t,compilerWasm:r}=e;if(r===void 0)',
+      'async loadQueryCompiler(e){let{clientVersion:t,compilerWasm:r}=e;if(r?.getNativeQueryCompiler)return r.getNativeQueryCompiler();if(r===void 0)'
+    );
+  }
+  if (!source.includes('r?.getNativeQueryCompiler')) {
+    throw new Error(`Could not patch Prisma native query compiler: ${runtimePath}`);
+  }
+  const changed = source !== original;
   if (source.includes('sending synchronous request')) {
     if (changed) fs.writeFileSync(runtimePath, source);
     return changed;

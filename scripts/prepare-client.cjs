@@ -20,26 +20,30 @@ if (portableClient === client && !client.includes("globalThis['__dirname'] = '/'
 fs.writeFileSync(clientPath, portableClient);
 
 let runtime = fs.readFileSync(classPath, 'utf8');
-const portableRuntime = (
-  runtime.includes('import { Buffer } from "buffer"')
-    ? runtime
-    : runtime.replace(
-        'import * as runtime from "@prisma/client/runtime/client"',
-        'import { Buffer } from "buffer"\nimport * as runtime from "@prisma/client/runtime/client"'
-      )
-)
-  .replace(
-    /(?:async )?function decodeBase64AsWasm\(wasmBase64: string\): (?:Promise<)?WebAssembly\.Module>? \{[\s\S]*?\n\}/,
-    `function decodeBase64AsWasm(wasmBase64: string): WebAssembly.Module {
-  return new WebAssembly.Module(Buffer.from(wasmBase64, 'base64'))
-}`
+runtime = runtime.replace('import { Buffer } from "buffer"\n', '');
+if (!runtime.includes('from "@prisma/react-native/native"')) {
+  runtime = runtime.replace(
+    'import * as runtime from "@prisma/client/runtime/client"',
+    'import * as runtime from "@prisma/client/runtime/client"\nimport { NativeQueryCompiler } from "@prisma/react-native/native"'
   );
-if (
-  portableRuntime === runtime &&
-  !runtime.includes("Buffer.from(wasmBase64, 'base64')")
-) {
+}
+if (!runtime.includes('getNativeQueryCompiler')) {
+  const functionStart = runtime.indexOf('function decodeBase64AsWasm');
+  const start = runtime.lastIndexOf('\n', functionStart) + 1;
+  const end = runtime.indexOf('\n\n\nexport type ', start);
+  if (functionStart < 0 || end < 0) {
+    throw new Error(`Unsupported Prisma client: ${classPath}`);
+  }
+  runtime =
+    runtime.slice(0, start) +
+    `config.compilerWasm = {
+  getNativeQueryCompiler: async () => NativeQueryCompiler
+} as any` +
+    runtime.slice(end);
+}
+if (!runtime.includes('getNativeQueryCompiler')) {
   throw new Error(`Unsupported Prisma client: ${classPath}`);
 }
-fs.writeFileSync(classPath, portableRuntime);
+fs.writeFileSync(classPath, runtime);
 
 console.log(`Prepared generated Prisma 7 client: ${directory}`);

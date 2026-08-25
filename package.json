@@ -32,6 +32,17 @@
         "types": "./lib/typescript/commonjs/expo-sqlite.d.ts",
         "default": "./lib/commonjs/expo-sqlite.js"
       }
+    },
+    "./native": {
+      "react-native": "./src/native.ts",
+      "import": {
+        "types": "./lib/typescript/module/native.d.ts",
+        "default": "./lib/module/native.js"
+      },
+      "require": {
+        "types": "./lib/typescript/commonjs/native.d.ts",
+        "default": "./lib/commonjs/native.js"
+      }
     }
   },
   "files": [
@@ -42,11 +53,18 @@
     "!**/__mocks__",
     "!**/.*",
     "scripts/patch-prisma-runtime.cjs",
-    "scripts/prepare-client.cjs"
+    "scripts/prepare-client.cjs",
+    "scripts/build-native-ios.sh",
+    "expo-module.config.json",
+    "PrismaReactNative.podspec",
+    "ios",
+    "native/include",
+    "native/PrismaQueryCompiler.xcframework"
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
     "prepare": "bob build",
+    "build:native:ios": "scripts/build-native-ios.sh",
     "build:release": "bob build && node scripts/obfuscate.cjs lib",
     "postinstall": "node ./scripts/patch-prisma-runtime.cjs"
   },
@@ -55,8 +73,7 @@
     "expo",
     "prisma",
     "sqlite",
-    "ios",
-    "android"
+    "ios"
   ],
   "repository": {
     "type": "git",
