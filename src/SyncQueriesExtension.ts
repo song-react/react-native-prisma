@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client/extension';
 import {
   type Action,
   serializeJsonQuery,
-} from '@prisma/client/runtime/react-native';
+} from '@prisma/client/runtime/client';
 
 const requestSync = (
   client: any,
@@ -13,12 +13,10 @@ const requestSync = (
   unpacker?: (data: any) => any
 ) => {
   const engine = client._engine;
-  if (
-    !engine?.libraryStarted ||
-    !engine.engine?.querySync ||
-    !globalThis.__PrismaProxy?.executeSync
-  ) {
-    throw new Error('Prisma synchronous query engine is not connected');
+  if (!engine?.requestSync) {
+    throw new Error(
+      'Prisma synchronous runtime is unavailable. Install @prisma/react-native after @prisma/client.'
+    );
   }
 
   const clientMethod = `${modelName}.${action}`;
@@ -35,24 +33,9 @@ const requestSync = (
     previewFeatures: client._previewFeatures,
     globalOmit: client._globalOmit,
   });
-  const response = engine.parseEngineResponse(
-    engine.engine.querySync(
-      JSON.stringify(protocolQuery),
-      JSON.stringify({
-        traceparent: client._tracingHelper.getTraceParent(),
-      }),
-      undefined
-    )
-  );
-
-  if (response.errors) {
-    throw response.errors.length === 1
-      ? engine.buildQueryError(response.errors[0])
-      : new Error(JSON.stringify(response.errors));
-  }
-  if (engine.loggerRustPanic) {
-    throw engine.loggerRustPanic;
-  }
+  const response = engine.requestSync(protocolQuery, {
+    traceparent: client._tracingHelper.getTraceParent(),
+  });
 
   return client._requestHandler.mapQueryEngineResult(
     {
@@ -70,7 +53,7 @@ const requestSync = (
       globalOmit: client._globalOmit,
       customDataProxyFetch: undefined,
     },
-    { data: response }
+    response
   );
 };
 
@@ -158,10 +141,6 @@ export const synchronousQueriesExtension = () =>
   Prisma.defineExtension((client) =>
     client.$extends({
       name: 'prisma-react-native-synchronous-queries',
-      client: {
-        $applyPendingMigrations: () =>
-          (client as any).$applyPendingMigrations(),
-      },
       model: {
         $allModels: {
           findUnique<T, A>(
@@ -216,6 +195,85 @@ export const synchronousQueriesExtension = () =>
               client,
               modelNameOf(client, this),
               'findMany',
+              args
+            );
+          },
+          create<T, A>(
+            this: T,
+            args: Prisma.Exact<A, Prisma.Args<T, 'create'>>
+          ): Prisma.Result<T, A, 'create'> {
+            return requestSync(client, modelNameOf(client, this), 'create', args);
+          },
+          createMany<T, A>(
+            this: T,
+            args: Prisma.Exact<A, Prisma.Args<T, 'createMany'>>
+          ): Prisma.Result<T, A, 'createMany'> {
+            return requestSync(
+              client,
+              modelNameOf(client, this),
+              'createMany',
+              args
+            );
+          },
+          createManyAndReturn<T, A>(
+            this: T,
+            args: Prisma.Exact<A, Prisma.Args<T, 'createManyAndReturn'>>
+          ): Prisma.Result<T, A, 'createManyAndReturn'> {
+            return requestSync(
+              client,
+              modelNameOf(client, this),
+              'createManyAndReturn',
+              args
+            );
+          },
+          update<T, A>(
+            this: T,
+            args: Prisma.Exact<A, Prisma.Args<T, 'update'>>
+          ): Prisma.Result<T, A, 'update'> {
+            return requestSync(client, modelNameOf(client, this), 'update', args);
+          },
+          updateMany<T, A>(
+            this: T,
+            args: Prisma.Exact<A, Prisma.Args<T, 'updateMany'>>
+          ): Prisma.Result<T, A, 'updateMany'> {
+            return requestSync(
+              client,
+              modelNameOf(client, this),
+              'updateMany',
+              args
+            );
+          },
+          updateManyAndReturn<T, A>(
+            this: T,
+            args: Prisma.Exact<A, Prisma.Args<T, 'updateManyAndReturn'>>
+          ): Prisma.Result<T, A, 'updateManyAndReturn'> {
+            return requestSync(
+              client,
+              modelNameOf(client, this),
+              'updateManyAndReturn',
+              args
+            );
+          },
+          upsert<T, A>(
+            this: T,
+            args: Prisma.Exact<A, Prisma.Args<T, 'upsert'>>
+          ): Prisma.Result<T, A, 'upsert'> {
+            return requestSync(client, modelNameOf(client, this), 'upsert', args);
+          },
+          delete<T, A>(
+            this: T,
+            args: Prisma.Exact<A, Prisma.Args<T, 'delete'>>
+          ): Prisma.Result<T, A, 'delete'> {
+            return requestSync(client, modelNameOf(client, this), 'delete', args);
+          },
+          deleteMany<T, A>(
+            this: T,
+            args?: Prisma.Exact<A, Prisma.Args<T, 'deleteMany'>>
+          ): Prisma.Result<T, A, 'deleteMany'> {
+            return requestSync(
+              client,
+              modelNameOf(client, this),
+              'deleteMany',
               args
             );
           },
