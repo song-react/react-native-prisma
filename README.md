@@ -9,7 +9,7 @@
 - 支持 Expo 默认 Hermes，不在运行时加载 WebAssembly，也不携带旧版完整 Query Engine。
 - 当前 iOS 开发基线为 Expo 58、React Native 0.87、Prisma 7.9.1。
 
-`release` 已包含 iPhone 与 Apple Silicon 模拟器的原生 Query Compiler；安装后需要重新生成原生工程或执行 `bun ios`。
+`release` 已包含 iPhone 与 arm64/x86_64 模拟器的原生 Query Compiler；安装后需要重新生成原生工程或执行 `bun ios`。
 
 ## 安装
 
