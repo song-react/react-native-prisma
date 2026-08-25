@@ -59,8 +59,8 @@
   },
   "peerDependencies": {
     "@prisma/client": "^7.9.1",
-    "expo": ">=52.0.0",
-    "expo-sqlite": ">=15.0.0",
+    "expo": ">=52.0.0-0",
+    "expo-sqlite": ">=15.0.0-0",
     "react-native": ">=0.76.0"
   },
   "engines": {
