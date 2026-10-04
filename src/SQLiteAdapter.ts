@@ -9,11 +9,8 @@ import {
   type SqlResultSet,
   type Transaction,
 } from '@prisma/driver-adapter-utils';
-import {
-  openDatabaseSync,
-  type SQLiteBindValue,
-  type SQLiteDatabase,
-} from 'expo-sqlite';
+import { Buffer } from 'buffer';
+import { NativeSQLiteDatabase } from './native';
 
 type Config = { url: string; directory?: string };
 type Migration = { name: string; checksum: string; sql: string };
@@ -32,28 +29,32 @@ interface DriverAdapter extends SqlDriverAdapter, QueryableDriver {
   startTransactionSync(isolationLevel?: IsolationLevel): DriverTransaction;
 }
 
-const mapArg = (value: unknown, type: ArgType): SQLiteBindValue => {
+const mapArg = (value: unknown, type: ArgType): unknown => {
   if (value == null) return null;
   if (typeof value === 'boolean') return value;
-  if (value instanceof Uint8Array || value instanceof ArrayBuffer) return value;
+  if (value instanceof Uint8Array || value instanceof ArrayBuffer)
+    return {
+      $type: 'Bytes',
+      value: Buffer.from(
+        value instanceof Uint8Array ? value : new Uint8Array(value)
+      ).toString('base64'),
+    };
   if (value instanceof Date) return value.toISOString().replace('Z', '+00:00');
   if (typeof value === 'bigint') {
-    const number = Number(value);
-    return Number.isSafeInteger(number) ? number : value.toString();
+    return { $type: 'BigInt', value: value.toString() };
   }
   if (typeof value === 'string') {
     if (type.scalarType === 'int' || type.scalarType === 'float') {
       return Number(value);
     }
     if (type.scalarType === 'bigint') {
-      const number = Number(value);
-      return Number.isSafeInteger(number) ? number : value;
+      return { $type: 'BigInt', value };
     }
     if (type.scalarType === 'datetime') {
       return new Date(value).toISOString().replace('Z', '+00:00');
     }
     if (type.scalarType === 'bytes') {
-      return Uint8Array.from(atob(value), (char) => char.charCodeAt(0));
+      return { $type: 'Bytes', value };
     }
     return value;
   }
@@ -62,7 +63,7 @@ const mapArg = (value: unknown, type: ArgType): SQLiteBindValue => {
 };
 
 const inferType = (rows: unknown[][], column: number) => {
-  const value = rows.find((row) => row[column] != null)?.[column];
+  const value = rows.find(row => row[column] != null)?.[column];
   if (value instanceof Uint8Array || value instanceof ArrayBuffer) {
     return ColumnTypeEnum.Bytes;
   }
@@ -70,8 +71,9 @@ const inferType = (rows: unknown[][], column: number) => {
     case 'boolean':
       return ColumnTypeEnum.Boolean;
     case 'number':
-    case 'bigint':
       return ColumnTypeEnum.UnknownNumber;
+    case 'bigint':
+      return ColumnTypeEnum.Int64;
     default:
       return ColumnTypeEnum.Text;
   }
@@ -88,7 +90,7 @@ const convertError = (error: any) => {
             .split(': ')
             .at(1)
             ?.split(', ')
-            .map((field) => field.split('.').at(-1)!) ?? [],
+            .map(field => field.split('.').at(-1)!) ?? [],
       },
     });
   }
@@ -101,7 +103,7 @@ const convertError = (error: any) => {
             .split(': ')
             .at(1)
             ?.split(', ')
-            .map((field) => field.split('.').at(-1)!) ?? [],
+            .map(field => field.split('.').at(-1)!) ?? [],
       },
     });
   }
@@ -122,34 +124,36 @@ const convertError = (error: any) => {
 
 class Queryable {
   readonly provider = 'sqlite' as const;
-  readonly adapterName = '@prisma/react-native';
+  readonly adapterName = '@song-react/react-native-prisma';
 
-  constructor(protected readonly db: SQLiteDatabase) {}
+  constructor(protected readonly db: NativeSQLiteDatabase) {}
 
   queryRawSync(query: SqlQuery): SqlResultSet {
-    const statement = this.db.prepareSync(query.sql);
     try {
-      const result = statement.executeForRawResultSync(
+      const result = this.db.query(
+        query.sql,
         query.args.map((arg, index) => mapArg(arg, query.argTypes[index]))
       );
-      const rows = result.getAllSync() as unknown[][];
-      const columnNames = statement.getColumnNamesSync();
       return {
-        columnNames,
-        columnTypes: columnNames.map((_, index) => inferType(rows, index)),
-        rows,
-        lastInsertId: String(result.lastInsertRowId),
+        columnNames: result.columnNames,
+        columnTypes: result.columnNames.map((_, index) =>
+          inferType(result.rows, index)
+        ),
+        rows: result.rows.map(_row =>
+          _row.map(_value =>
+            typeof _value === 'bigint' ? _value.toString() : _value
+          )
+        ),
+        lastInsertId: result.lastInsertId,
       };
     } catch (error) {
       throw convertError(error);
-    } finally {
-      statement.finalizeSync();
     }
   }
 
   executeRawSync(query: SqlQuery): number {
     try {
-      return this.db.runSync(
+      return this.db.query(
         query.sql,
         query.args.map((arg, index) => mapArg(arg, query.argTypes[index]))
       ).changes;
@@ -167,14 +171,11 @@ class Queryable {
   }
 }
 
-class ExpoSQLiteTransaction
-  extends Queryable
-  implements DriverTransaction
-{
-  readonly options = { usePhantomQuery: false };
+class SQLiteTransaction extends Queryable implements DriverTransaction {
+  readonly options = { usePhantomQuery: true };
 
   commitSync() {
-    this.db.execSync('COMMIT');
+    this.db.exec('COMMIT');
   }
 
   commit() {
@@ -183,7 +184,7 @@ class ExpoSQLiteTransaction
   }
 
   rollbackSync() {
-    this.db.execSync('ROLLBACK');
+    this.db.exec('ROLLBACK');
   }
 
   rollback() {
@@ -192,16 +193,62 @@ class ExpoSQLiteTransaction
   }
 }
 
-class ExpoSQLiteAdapter
-  extends Queryable
-  implements DriverAdapter
-{
-  constructor(db: SQLiteDatabase, private readonly onDispose: () => void) {
+const _upgradeLegacyMigrations = (
+  _db: NativeSQLiteDatabase,
+  _migrations: readonly Migration[]
+) => {
+  const _columns = _db.all<{ name: string }>(
+    'PRAGMA table_info("_prisma_migrations")'
+  );
+  if (_columns.some(_column => _column.name === 'checksum')) return;
+  if (!_columns.some(_column => _column.name === 'failed_at')) return;
+  const _rows = _db.all<{
+    id: string;
+    migration_name: string;
+    finished_at: string | null;
+    failed_at: string | null;
+  }>('SELECT * FROM "_prisma_migrations"');
+  _db.exec('BEGIN IMMEDIATE');
+  try {
+    _db.exec(`
+      ALTER TABLE "_prisma_migrations" ADD COLUMN "checksum" TEXT NOT NULL DEFAULT '';
+      ALTER TABLE "_prisma_migrations" ADD COLUMN "rolled_back_at" DATETIME;
+      ALTER TABLE "_prisma_migrations" ADD COLUMN "logs" TEXT;
+      ALTER TABLE "_prisma_migrations" ADD COLUMN "applied_steps_count" INTEGER NOT NULL DEFAULT 0;
+    `);
+    for (const _row of _rows) {
+      const _migration = _migrations.find(
+        _item => _item.name === _row.migration_name
+      );
+      if (!_migration)
+        throw new Error(`旧数据库迁移 ${_row.migration_name} 缺少对应的 SQL`);
+      _db.query(
+        'UPDATE "_prisma_migrations" SET "checksum" = ?, "rolled_back_at" = ?, "applied_steps_count" = ? WHERE "id" = ?',
+        [
+          _migration.checksum,
+          _row.failed_at,
+          _row.finished_at && !_row.failed_at ? 1 : 0,
+          _row.id,
+        ]
+      );
+    }
+    _db.exec('COMMIT');
+  } catch (_error) {
+    _db.exec('ROLLBACK');
+    throw _error;
+  }
+};
+
+class SQLiteAdapter extends Queryable implements DriverAdapter {
+  constructor(
+    db: NativeSQLiteDatabase,
+    private readonly onDispose: () => void
+  ) {
     super(db);
   }
 
   executeScript(script: string) {
-    this.db.execSync(script);
+    this.db.exec(script);
     return Promise.resolve();
   }
 
@@ -212,8 +259,8 @@ class ExpoSQLiteAdapter
         level: isolationLevel,
       });
     }
-    this.db.execSync('BEGIN IMMEDIATE');
-    return new ExpoSQLiteTransaction(this.db);
+    this.db.exec('BEGIN IMMEDIATE');
+    return new SQLiteTransaction(this.db);
   }
 
   startTransaction(isolationLevel?: IsolationLevel) {
@@ -229,7 +276,7 @@ class ExpoSQLiteAdapter
   }
 
   applyPendingMigrations(migrations: readonly Migration[]) {
-    this.db.execSync(`
+    this.db.exec(`
       CREATE TABLE IF NOT EXISTS "_prisma_migrations" (
         "id" TEXT NOT NULL PRIMARY KEY,
         "checksum" TEXT NOT NULL,
@@ -241,53 +288,56 @@ class ExpoSQLiteAdapter
         "applied_steps_count" INTEGER UNSIGNED NOT NULL DEFAULT 0
       )
     `);
+    _upgradeLegacyMigrations(this.db, migrations);
 
     for (const migration of migrations) {
-      const applied = this.db.getFirstSync<{ checksum: string }>(
+      const applied = this.db.all<{ checksum: string }>(
         `SELECT "checksum" FROM "_prisma_migrations"
          WHERE "migration_name" = ?
            AND "finished_at" IS NOT NULL
            AND "rolled_back_at" IS NULL`,
-        migration.name
-      );
+        [migration.name]
+      )[0];
       if (applied) {
         if (applied.checksum !== migration.checksum) {
-          throw new Error(`Migration ${migration.name} was modified after applying`);
+          throw new Error(
+            `Migration ${migration.name} was modified after applying`
+          );
         }
         continue;
       }
 
-      this.db.execSync('BEGIN IMMEDIATE');
+      this.db.exec('BEGIN IMMEDIATE');
       try {
-        this.db.execSync(migration.sql);
-        this.db.runSync(
+        this.db.exec(migration.sql);
+        this.db.query(
           `INSERT INTO "_prisma_migrations"
             ("id", "checksum", "finished_at", "migration_name", "applied_steps_count")
            VALUES (?, ?, CURRENT_TIMESTAMP, ?, 1)`,
           [migration.name, migration.checksum, migration.name]
         );
-        this.db.execSync('COMMIT');
+        this.db.exec('COMMIT');
       } catch (error) {
-        this.db.execSync('ROLLBACK');
+        this.db.exec('ROLLBACK');
         throw error;
       }
     }
   }
 
   dispose() {
-    this.db.closeSync();
+    this.db.close();
     this.onDispose();
     return Promise.resolve();
   }
 }
 
-export class PrismaExpoSQLite implements SqlDriverAdapterFactory {
+export class PrismaSQLite implements SqlDriverAdapterFactory {
   readonly provider = 'sqlite' as const;
-  readonly adapterName = '@prisma/react-native';
-  #adapter?: ExpoSQLiteAdapter;
+  readonly adapterName = '@song-react/react-native-prisma';
+  #adapter?: SQLiteAdapter;
   #migrations: readonly Migration[] = [];
 
-  constructor(private readonly config: Config | string) {}
+  constructor(private readonly config: Config | string = 'app.db') {}
 
   private connectAdapter() {
     if (this.#adapter) return this.#adapter;
@@ -297,10 +347,9 @@ export class PrismaExpoSQLite implements SqlDriverAdapterFactory {
     const path = url.replace(/^file:/, '');
     const slash = path.lastIndexOf('/');
     const databaseName = slash < 0 ? path : path.slice(slash + 1);
-    this.#adapter = new ExpoSQLiteAdapter(
-      openDatabaseSync(
+    this.#adapter = new SQLiteAdapter(
+      new NativeSQLiteDatabase(
         databaseName || 'app.db',
-        {},
         directory ?? (slash < 0 ? undefined : path.slice(0, slash))
       ),
       () => {

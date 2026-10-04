@@ -8,6 +8,5 @@
     "isolatedModules": true,
     "skipLibCheck": true
   },
-  "include": ["src"],
-  "exclude": ["lib"]
+  "include": ["src"]
 }

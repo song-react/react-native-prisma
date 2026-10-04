@@ -6,3 +6,5 @@ lib/
 /native/query-compiler/target/
 /native/PrismaQueryCompiler.xcframework/
 bun.lock
+*.tgz
+/nitrogen/generated/
