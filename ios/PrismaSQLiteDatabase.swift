@@ -26,11 +26,11 @@ final class PrismaSQLiteDatabase {
         }
       } else {
         root = try FileManager.default.url(
-          for: .documentDirectory,
+          for: .libraryDirectory,
           in: .userDomainMask,
           appropriateFor: nil,
           create: true
-        ).appendingPathComponent("SQLite", isDirectory: true)
+        )
       }
       let url = root.appendingPathComponent(name)
       try FileManager.default.createDirectory(
