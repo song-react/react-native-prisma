@@ -1,31 +1,22 @@
-# React Native Prisma 7.9
+# React Native Prisma
 
-面向 Expo 与 React Native 新架构的 Prisma 7.9 同步本地数据库方案。
-
-- 将 Prisma 7.9 Query Compiler 精简为 SQLite 原生库，通过 Expo Modules JSI 同步调用。
-- 通过 `expo-sqlite` 的 JSI 同步接口直接读写 SQLite。
-- CRUD、聚合、关联查询和查询计划事务直接返回结果，不为每次本地查询额外创建 Promise。
-- 避免数据库已经返回、界面仍等待 Promise 调度后才更新的问题。
-- 支持 Expo 默认 Hermes，不在运行时加载 WebAssembly，也不携带旧版完整 Query Engine。
-- 当前 iOS 开发基线为 Expo 58、React Native 0.87、Prisma 7.9.1。
-
-`release` 已包含 iPhone 与 arm64/x86_64 模拟器的原生 Query Compiler；安装后需要重新生成原生工程或执行 `bun ios`。
+Prisma 7.9.1 的 iOS 同步客户端。通过 Nitro 调用原生 Query Compiler 和系统 SQLite3，支持 Hermes、无损 BigInt、迁移与同步 CRUD，不依赖 Expo。
 
 ## 安装
 
-`prisma`、`@prisma/client` 与本包版本必须一致：
-
 ```sh
-bun add @prisma/client@7.9.1 expo-sqlite github:song-react/react-native-prisma#release
+bun add --trust @prisma/client@7.9.1 react-native-nitro-modules@0.37.1 @song-react/react-native-prisma@github:song-react/react-native-prisma#release
 bun add -d prisma@7.9.1
 ```
 
-生成器配置：
+`prisma`、`@prisma/client` 与本包版本需一致。`--trust` 允许本包通过 `postinstall` 自动接入同步运行时和官方生成器；业务工程无需额外生成器、脚本或补丁。安装原生依赖后需重新编译 App。
+
+## 生成
 
 ```prisma
 generator client {
   provider = "prisma-client"
-  output   = "../generated/prisma"
+  output   = "../node_modules/@song-react/react-native-prisma/generated"
 }
 
 datasource db {
@@ -38,64 +29,80 @@ model User {
 }
 ```
 
-每次生成 Prisma Client 后执行准备脚本：
+保留普通 Prisma 脚本：
 
 ```json
 {
   "scripts": {
-    "db:generate": "prisma generate && prisma-react-native generated/prisma",
-    "db:migrate": "prisma migrate dev && bun db:generate",
-    "db:push": "prisma db push && bun db:generate",
-    "db:studio": "prisma studio",
-    "postinstall": "bun db:generate && prisma-react-native generated/prisma"
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio"
   }
 }
 ```
 
-`prisma-react-native` 会移除生成客户端中的 Node 与 WebAssembly 依赖，并接入 Hermes 可用的同步原生 Query Compiler。
-它还会把 `prisma/migrations/*/migration.sql` 嵌入生成的 Client，供设备端首次启动和版本升级时执行。
+修改 schema 或迁移后执行 `bun db:generate`。生成器会同时嵌入 `migrations/*/migration.sql`，设备端启动时执行迁移；`db push` 只更新开发机数据库。
 
-## Demo
+## 使用
 
-```ts
-import { PrismaClient } from './generated/prisma/client';
-import {
-  PrismaExpoSQLite,
-  queriesExtension,
-} from '@prisma/react-native';
+将数据库与启动 Provider 放在 `components/providers/PrismaProvider.tsx`：
 
-export const db = new PrismaClient({
-  adapter: new PrismaExpoSQLite('app.db'),
-}).$extends(queriesExtension());
+```tsx
+import { PrismaClient, queriesExtension } from '@prisma/client';
+import { useEffect, useState, type ReactNode } from 'react';
 
-// 自动应用尚未执行的迁移，并完成首次连接。
-export const databaseReady = db.$applyPendingMigrations();
-```
+export const db = new PrismaClient().$extends(queriesExtension());
 
-连接完成后直接同步调用：
+export const PrismaProvider = ({
+  children,
+  loading,
+  error,
+}: {
+  children: ReactNode;
+  loading?: ReactNode;
+  error?: (_error: Error) => ReactNode;
+}) => {
+  const [_error, _setError] = useState<Error | null>();
 
-```ts
-const start = async () => {
-  await databaseReady;
+  useEffect(() => {
+    void db.$applyPendingMigrations().then(
+      () => _setError(null),
+      _cause =>
+        _setError(_cause instanceof Error ? _cause : new Error(String(_cause)))
+    );
+  }, []);
 
-  const user = db.user.create({ data: { name: 'Ada' } });
-  const users = db.user.findMany({ orderBy: { id: 'desc' } });
-  const count = db.user.count();
-
-  console.log(user, users, count);
+  return _error === undefined
+    ? loading
+    : _error === null
+      ? children
+      : error?.(_error);
 };
 ```
 
-## API
+`new PrismaClient()` 默认使用 `app.db`。`$applyPendingMigrations()` 包含首次连接，成功后挂载子页面；加载界面传入 `loading`，失败界面由 `error(error)` 提供。需要重试时重新挂载 Provider。
+
+初始化后直接同步查询：
 
 ```ts
-import { queriesExtension } from '@prisma/react-native';
-import { PrismaExpoSQLite } from '@prisma/react-native';
+import { db } from '../components/providers/PrismaProvider';
+
+const user = db.user.create({ data: { name: 'Ada' } });
+const users = db.user.findMany();
 ```
 
-开发时使用 `prisma migrate dev` 生成迁移；`prisma db push` 只更新开发机数据库，不会更新用户设备。App 启动时调用一次 `$applyPendingMigrations()`，之后 CRUD、聚合和查询计划事务均同步返回。
+## 导入与输出目录
 
-## 发布分支
+Client、模型和同步扩展支持三个入口，指向同一个 Client：
 
-- `main`：完整 TypeScript 源码。
-- `release`：iOS 原生 Query Compiler、CommonJS、ESM、类型声明及混淆 JS，可直接作为 Git 依赖安装。
+```ts
+import { PrismaClient, queriesExtension, type User } from '@prisma/client';
+// 也可从 @song-react/react-native-prisma 或配置的 output 目录导入。
+```
+
+`output` 相对 schema 解析，支持工程内目录、`node_modules` 中的独立目录或能解析当前工程依赖的绝对路径。修改后执行 `prisma generate`，本包与 `@prisma/client` 会自动转发到新目录。不能覆盖已安装的 Prisma 包；自动入口绑定一个 schema。
+
+Demo 的生成目录位于 `node_modules`，无需入库。其他输出目录请加入 `.gitignore`。
+
+`main` 保存源码；`release` 包含编译后的 JS、类型声明和 iPhone / 模拟器原生库，可直接作为 Git 依赖安装。

@@ -1,5 +1,5 @@
 import { type IsolationLevel, type SqlDriverAdapter, type SqlDriverAdapterFactory, type SqlQuery, type SqlResultSet, type Transaction } from '@prisma/driver-adapter-utils';
-import { type SQLiteDatabase } from 'expo-sqlite';
+import { NativeSQLiteDatabase } from './native';
 type Config = {
     url: string;
     directory?: string;
@@ -21,16 +21,16 @@ interface DriverAdapter extends SqlDriverAdapter, QueryableDriver {
     startTransactionSync(isolationLevel?: IsolationLevel): DriverTransaction;
 }
 declare class Queryable {
-    protected readonly db: SQLiteDatabase;
+    protected readonly db: NativeSQLiteDatabase;
     readonly provider: "sqlite";
-    readonly adapterName = "@prisma/react-native";
-    constructor(db: SQLiteDatabase);
+    readonly adapterName = "@song-react/react-native-prisma";
+    constructor(db: NativeSQLiteDatabase);
     queryRawSync(query: SqlQuery): SqlResultSet;
     executeRawSync(query: SqlQuery): number;
     queryRaw(query: SqlQuery): Promise<SqlResultSet>;
     executeRaw(query: SqlQuery): Promise<number>;
 }
-declare class ExpoSQLiteTransaction extends Queryable implements DriverTransaction {
+declare class SQLiteTransaction extends Queryable implements DriverTransaction {
     readonly options: {
         usePhantomQuery: boolean;
     };
@@ -39,12 +39,12 @@ declare class ExpoSQLiteTransaction extends Queryable implements DriverTransacti
     rollbackSync(): void;
     rollback(): Promise<void>;
 }
-declare class ExpoSQLiteAdapter extends Queryable implements DriverAdapter {
+declare class SQLiteAdapter extends Queryable implements DriverAdapter {
     private readonly onDispose;
-    constructor(db: SQLiteDatabase, onDispose: () => void);
+    constructor(db: NativeSQLiteDatabase, onDispose: () => void);
     executeScript(script: string): Promise<void>;
-    startTransactionSync(isolationLevel?: IsolationLevel): ExpoSQLiteTransaction;
-    startTransaction(isolationLevel?: IsolationLevel): Promise<ExpoSQLiteTransaction>;
+    startTransactionSync(isolationLevel?: IsolationLevel): SQLiteTransaction;
+    startTransaction(isolationLevel?: IsolationLevel): Promise<SQLiteTransaction>;
     getConnectionInfo(): {
         maxBindValues: number;
         supportsRelationJoins: boolean;
@@ -52,16 +52,16 @@ declare class ExpoSQLiteAdapter extends Queryable implements DriverAdapter {
     applyPendingMigrations(migrations: readonly Migration[]): void;
     dispose(): Promise<void>;
 }
-export declare class PrismaExpoSQLite implements SqlDriverAdapterFactory {
+export declare class PrismaSQLite implements SqlDriverAdapterFactory {
     #private;
     private readonly config;
     readonly provider: "sqlite";
-    readonly adapterName = "@prisma/react-native";
-    constructor(config: Config | string);
+    readonly adapterName = "@song-react/react-native-prisma";
+    constructor(config?: Config | string);
     private connectAdapter;
     setMigrations(migrations: readonly Migration[]): void;
     applyPendingMigrations(): void;
-    connect(): Promise<ExpoSQLiteAdapter>;
+    connect(): Promise<SQLiteAdapter>;
 }
 export {};
-//# sourceMappingURL=ExpoSQLiteAdapter.d.ts.map
+//# sourceMappingURL=SQLiteAdapter.d.ts.map

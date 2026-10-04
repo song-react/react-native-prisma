@@ -1,0 +1,1 @@
+{"version":3,"names":["NativeQueryCompiler","queriesExtension","PrismaSQLite"],"sourceRoot":"../../src","sources":["index.ts"],"mappings":";;AAAA,cAAc,gBAAgB;AAC9B,SAASA,mBAAmB,QAAQ,aAAU;AAC9C,SAASC,gBAAgB,QAAQ,uBAAoB;AACrD,SAASC,YAAY,QAAQ,oBAAiB","ignoreList":[]}

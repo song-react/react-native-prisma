@@ -1,17 +1,17 @@
 {
-  "name": "@prisma/react-native",
+  "name": "@song-react/react-native-prisma",
   "version": "7.9.1",
-  "description": "Synchronous Prisma 7 client for React Native and Expo SQLite",
-  "main": "lib/commonjs/index.js",
-  "module": "lib/module/index.js",
+  "description": "Synchronous Prisma 7 client for React Native with native SQLite",
+  "main": "lib/commonjs/index",
+  "module": "lib/module/index",
   "types": "lib/typescript/commonjs/index.d.ts",
   "react-native": "lib/module/index.js",
-  "bin": {
-    "prisma-react-native": "scripts/prepare-client.cjs"
-  },
   "exports": {
     ".": {
-      "react-native": "./lib/module/index.js",
+      "react-native": {
+        "types": "./lib/typescript/module/index.d.ts",
+        "default": "./lib/module/index.js"
+      },
       "import": {
         "types": "./lib/typescript/module/index.d.ts",
         "default": "./lib/module/index.js"
@@ -20,18 +20,64 @@
         "types": "./lib/typescript/commonjs/index.d.ts",
         "default": "./lib/commonjs/index.js"
       }
+    },
+    "./adapter": {
+      "react-native": {
+        "types": "./lib/typescript/module/SQLiteAdapter.d.ts",
+        "default": "./lib/module/SQLiteAdapter.js"
+      },
+      "import": {
+        "types": "./lib/typescript/module/SQLiteAdapter.d.ts",
+        "default": "./lib/module/SQLiteAdapter.js"
+      },
+      "require": {
+        "types": "./lib/typescript/commonjs/SQLiteAdapter.d.ts",
+        "default": "./lib/commonjs/SQLiteAdapter.js"
+      }
+    },
+    "./queries": {
+      "react-native": {
+        "types": "./lib/typescript/module/QueriesExtension.d.ts",
+        "default": "./lib/module/QueriesExtension.js"
+      },
+      "import": {
+        "types": "./lib/typescript/module/QueriesExtension.d.ts",
+        "default": "./lib/module/QueriesExtension.js"
+      },
+      "require": {
+        "types": "./lib/typescript/commonjs/QueriesExtension.d.ts",
+        "default": "./lib/commonjs/QueriesExtension.js"
+      }
+    },
+    "./native": {
+      "react-native": {
+        "types": "./lib/typescript/module/native.d.ts",
+        "default": "./lib/module/native.js"
+      },
+      "import": {
+        "types": "./lib/typescript/module/native.d.ts",
+        "default": "./lib/module/native.js"
+      },
+      "require": {
+        "types": "./lib/typescript/commonjs/native.d.ts",
+        "default": "./lib/commonjs/native.js"
+      }
+    },
+    "./*": {
+      "types": "./*/index.d.ts",
+      "default": "./*/index.js"
     }
   },
   "files": [
     "lib",
-    "scripts",
-    "expo-module.config.json",
+    "scripts/patch-prisma-runtime.cjs",
+    "scripts/prepare-client.cjs",
     "PrismaReactNative.podspec",
     "ios",
     "native/include",
     "native/PrismaQueryCompiler.xcframework",
-    "README.md",
-    "LICENSE"
+    "nitro.json",
+    "nitrogen/generated"
   ],
   "scripts": {
     "postinstall": "node ./scripts/patch-prisma-runtime.cjs"
@@ -53,17 +99,17 @@
     "url": "https://github.com/song-react/react-native-prisma/issues"
   },
   "homepage": "https://github.com/song-react/react-native-prisma#readme",
-  "dependencies": {
-    "@prisma/driver-adapter-utils": "7.9.1",
-    "buffer": "^6.0.3"
-  },
   "peerDependencies": {
-    "@prisma/client": "^7.9.1",
-    "expo": ">=52.0.0 || >=58.0.0-0 <59.0.0",
-    "expo-sqlite": ">=15.0.0 || >=58.0.0-0 <59.0.0",
-    "react-native": ">=0.76.0"
+    "@prisma/client": "7.9.1",
+    "prisma": "7.9.1",
+    "react-native": ">=0.76.0",
+    "react-native-nitro-modules": "0.37.1"
   },
   "engines": {
     "node": ">=22.12.0"
+  },
+  "dependencies": {
+    "@prisma/driver-adapter-utils": "7.9.1",
+    "buffer": "^6.0.3"
   }
 }
