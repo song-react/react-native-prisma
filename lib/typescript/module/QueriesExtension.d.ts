@@ -21,5 +21,6 @@ export declare const queriesExtension: () => (client: any) => import("@prisma/cl
     };
 }, {}, {
     $applyPendingMigrations: () => Promise<void>;
+    $transaction<T, R>(this: T, _callback: (_tx: Pick<T, Exclude<Extract<keyof T, string>, `$${string}`>>) => R & (R extends PromiseLike<unknown> ? never : unknown)): R;
 }> & import("@prisma/client/runtime/client").DefaultArgs>;
 //# sourceMappingURL=QueriesExtension.d.ts.map

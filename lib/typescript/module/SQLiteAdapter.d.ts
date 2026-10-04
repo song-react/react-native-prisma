@@ -31,9 +31,11 @@ declare class Queryable {
     executeRaw(query: SqlQuery): Promise<number>;
 }
 declare class SQLiteTransaction extends Queryable implements DriverTransaction {
+    private readonly savepoint;
     readonly options: {
         usePhantomQuery: boolean;
     };
+    constructor(db: NativeSQLiteDatabase, savepoint: string);
     commitSync(): void;
     commit(): Promise<void>;
     rollbackSync(): void;
@@ -41,6 +43,7 @@ declare class SQLiteTransaction extends Queryable implements DriverTransaction {
 }
 declare class SQLiteAdapter extends Queryable implements DriverAdapter {
     private readonly onDispose;
+    private transactionId;
     constructor(db: NativeSQLiteDatabase, onDispose: () => void);
     executeScript(script: string): Promise<void>;
     startTransactionSync(isolationLevel?: IsolationLevel): SQLiteTransaction;
@@ -61,6 +64,7 @@ export declare class PrismaSQLite implements SqlDriverAdapterFactory {
     private connectAdapter;
     setMigrations(migrations: readonly Migration[]): void;
     applyPendingMigrations(): void;
+    transactionSync<R>(_callback: () => R): R;
     connect(): Promise<SQLiteAdapter>;
 }
 export {};
