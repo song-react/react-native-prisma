@@ -102,14 +102,14 @@
   "peerDependencies": {
     "@prisma/client": "7.9.1",
     "prisma": "7.9.1",
-    "react-native": ">=0.76.0",
-    "react-native-nitro-modules": "0.37.1"
+    "react-native": ">=0.76.0"
   },
   "engines": {
     "node": ">=22.12.0"
   },
   "dependencies": {
     "@prisma/driver-adapter-utils": "7.9.1",
-    "buffer": "^6.0.3"
+    "buffer": "^6.0.3",
+    "react-native-nitro-modules": "0.37.1"
   }
 }
