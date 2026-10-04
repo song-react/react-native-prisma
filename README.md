@@ -5,11 +5,11 @@ Prisma 7.9.1 的 iOS 同步客户端。通过 Nitro 调用原生 Query Compiler 
 ## 安装
 
 ```sh
-bun add --trust @prisma/client@7.9.1 react-native-nitro-modules@0.37.1 @song-react/react-native-prisma@github:song-react/react-native-prisma#release
+bun add --trust @prisma/client@7.9.1 @song-react/react-native-prisma@github:song-react/react-native-prisma#release
 bun add -d prisma@7.9.1
 ```
 
-`prisma`、`@prisma/client` 与本包版本需一致。`--trust` 允许本包通过 `postinstall` 自动接入同步运行时和官方生成器；业务工程无需额外生成器、脚本或补丁。安装原生依赖后需重新编译 App。
+`prisma`、`@prisma/client` 与本包版本需一致。`--trust` 允许本包通过 `postinstall` 自动接入同步运行时和官方生成器；业务工程无需额外生成器、脚本或补丁。Nitro 原生桥由本包自动安装；Expo SDK 54 及以上会自动链接，无需单独声明。使用 React Native 社区 CLI 时需将 Nitro 加入原生链接配置。安装后需重新编译 App。
 
 ## 生成
 

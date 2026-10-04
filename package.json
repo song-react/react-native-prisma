@@ -112,14 +112,12 @@
     "react-native": "0.87.0",
     "react-native-builder-bob": "0.40.13",
     "typescript": "^5.4.5",
-    "react-native-nitro-modules": "0.37.1",
     "nitrogen": "0.37.1"
   },
   "peerDependencies": {
     "@prisma/client": "7.9.1",
     "prisma": "7.9.1",
-    "react-native": ">=0.76.0",
-    "react-native-nitro-modules": "0.37.1"
+    "react-native": ">=0.76.0"
   },
   "engines": {
     "node": ">=22.12.0"
@@ -150,6 +148,7 @@
   },
   "dependencies": {
     "@prisma/driver-adapter-utils": "7.9.1",
-    "buffer": "^6.0.3"
+    "buffer": "^6.0.3",
+    "react-native-nitro-modules": "0.37.1"
   }
 }
