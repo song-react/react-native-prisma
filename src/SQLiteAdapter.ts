@@ -174,8 +174,15 @@ class Queryable {
 class SQLiteTransaction extends Queryable implements DriverTransaction {
   readonly options = { usePhantomQuery: true };
 
+  constructor(
+    db: NativeSQLiteDatabase,
+    private readonly savepoint: string
+  ) {
+    super(db);
+  }
+
   commitSync() {
-    this.db.exec('COMMIT');
+    this.db.exec(`RELEASE SAVEPOINT "${this.savepoint}"`);
   }
 
   commit() {
@@ -184,7 +191,8 @@ class SQLiteTransaction extends Queryable implements DriverTransaction {
   }
 
   rollbackSync() {
-    this.db.exec('ROLLBACK');
+    this.db.exec(`ROLLBACK TO SAVEPOINT "${this.savepoint}"`);
+    this.db.exec(`RELEASE SAVEPOINT "${this.savepoint}"`);
   }
 
   rollback() {
@@ -240,6 +248,8 @@ const _upgradeLegacyMigrations = (
 };
 
 class SQLiteAdapter extends Queryable implements DriverAdapter {
+  private transactionId = 0;
+
   constructor(
     db: NativeSQLiteDatabase,
     private readonly onDispose: () => void
@@ -259,8 +269,9 @@ class SQLiteAdapter extends Queryable implements DriverAdapter {
         level: isolationLevel,
       });
     }
-    this.db.exec('BEGIN IMMEDIATE');
-    return new SQLiteTransaction(this.db);
+    const _savepoint = `prisma_${++this.transactionId}`;
+    this.db.exec(`SAVEPOINT "${_savepoint}"`);
+    return new SQLiteTransaction(this.db, _savepoint);
   }
 
   startTransaction(isolationLevel?: IsolationLevel) {
@@ -365,6 +376,30 @@ export class PrismaSQLite implements SqlDriverAdapterFactory {
 
   applyPendingMigrations() {
     this.connectAdapter().applyPendingMigrations(this.#migrations);
+  }
+
+  transactionSync<R>(_callback: () => R): R {
+    const _transaction = this.connectAdapter().startTransactionSync();
+    try {
+      const _result = _callback();
+      if (
+        _result != null &&
+        (typeof _result === 'object' || typeof _result === 'function') &&
+        'then' in _result &&
+        typeof _result.then === 'function'
+      ) {
+        throw new Error('同步事务回调不能返回 Promise 或使用 await');
+      }
+      _transaction.commitSync();
+      return _result;
+    } catch (_error) {
+      try {
+        _transaction.rollbackSync();
+      } catch {
+        // 保留导致事务失败的原始错误。
+      }
+      throw _error;
+    }
   }
 
   connect() {

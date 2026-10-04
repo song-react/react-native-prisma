@@ -81,7 +81,7 @@ export const PrismaProvider = ({
 };
 ```
 
-`new PrismaClient()` 默认使用 `app.db`。`$applyPendingMigrations()` 包含首次连接，成功后挂载子页面；加载界面传入 `loading`，失败界面由 `error(error)` 提供。需要重试时重新挂载 Provider。
+`new PrismaClient()` 默认使用 `Library/app.db`，沿用旧版数据库。`$applyPendingMigrations()` 包含首次连接，成功后挂载子页面；加载界面传入 `loading`，失败界面由 `error(error)` 提供。需要重试时重新挂载 Provider。
 
 初始化后直接同步查询：
 
@@ -91,6 +91,17 @@ import { db } from '../components/providers/PrismaProvider';
 const user = db.user.create({ data: { name: 'Ada' } });
 const users = db.user.findMany();
 ```
+
+批量写入使用同步回调事务，出错时整批回滚：
+
+```ts
+db.$transaction(tx => {
+  tx.user.create({ data: { name: 'Ada' } });
+  tx.user.create({ data: { name: 'Lin' } });
+});
+```
+
+回调内通过 `tx` 同步操作模型，不使用 `async` 或 `await`。同步查询立即执行，因此不支持旧的 `$transaction([操作, ...])`。
 
 ## 导入与输出目录
 

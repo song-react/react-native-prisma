@@ -129,6 +129,80 @@ export const queriesExtension = () =>
       client: {
         $applyPendingMigrations: (): Promise<void> =>
           (client as any).$applyPendingMigrations(),
+        $transaction<T, R>(
+          this: T,
+          _callback: (
+            _tx: Pick<T, Exclude<Extract<keyof T, string>, `$${string}`>>
+          ) => R & (R extends PromiseLike<unknown> ? never : unknown)
+        ): R {
+          if (typeof _callback !== 'function') {
+            throw new Error(
+              '同步事务需要回调函数，不能传入已经执行的查询结果数组'
+            );
+          }
+          if (
+            Object.prototype.toString.call(_callback) ===
+            '[object AsyncFunction]'
+          ) {
+            throw new Error('同步事务回调不能是 async 函数');
+          }
+          const _owner = Prisma.getExtensionContext(this as never) as {
+            _engineConfig: {
+              adapter?: { transactionSync<R>(_callback: () => R): R };
+            };
+            _runtimeDataModel: { models: Record<string, object> };
+          };
+          const _adapter = _owner._engineConfig.adapter;
+          if (typeof _adapter?.transactionSync !== 'function') {
+            throw new Error('当前 Prisma adapter 不支持同步事务');
+          }
+          let _closed = false;
+          const _guard = () => {
+            if (_closed) throw new Error('同步事务已经结束，不能继续使用 tx');
+          };
+          const _models = new Set(
+            Object.keys(_owner._runtimeDataModel.models).map(
+              _name => _name[0].toLowerCase() + _name.slice(1)
+            )
+          );
+          const _proxy = (_target: object, _model = false): object =>
+            new Proxy(_target, {
+              get(_target, _key, _receiver) {
+                _guard();
+                if (
+                  !_model &&
+                  typeof _key === 'string' &&
+                  _key.startsWith('$')
+                ) {
+                  throw new Error(`同步事务中不能调用 ${_key}`);
+                }
+                const _value = Reflect.get(_target, _key, _receiver);
+                if (typeof _value === 'function') {
+                  return new Proxy(_value, {
+                    apply(_function, _this, _args) {
+                      _guard();
+                      return Reflect.apply(_function, _this, _args);
+                    },
+                  });
+                }
+                return !_model && typeof _key === 'string' && _models.has(_key)
+                  ? _proxy(_value, true)
+                  : _value;
+              },
+            });
+          try {
+            return _adapter.transactionSync(() =>
+              _callback(
+                _proxy(_owner) as Pick<
+                  T,
+                  Exclude<Extract<keyof T, string>, `$${string}`>
+                >
+              )
+            );
+          } finally {
+            _closed = true;
+          }
+        },
       },
       model: {
         $allModels: {
