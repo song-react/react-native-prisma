@@ -5,5 +5,4 @@ node_modules/
 lib/
 /native/query-compiler/target/
 /native/PrismaQueryCompiler.xcframework/
-.yarn/*
-!.yarn/releases
+bun.lock
