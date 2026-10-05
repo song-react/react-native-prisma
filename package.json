@@ -1,5 +1,5 @@
 {
-  "name": "@song-react/react-native-prisma",
+  "name": "@prisma/react-native",
   "version": "7.9.1",
   "description": "Synchronous Prisma 7 client for React Native with native SQLite",
   "main": "lib/commonjs/index",

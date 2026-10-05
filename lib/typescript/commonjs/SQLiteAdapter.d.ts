@@ -23,7 +23,7 @@ interface DriverAdapter extends SqlDriverAdapter, QueryableDriver {
 declare class Queryable {
     protected readonly db: NativeSQLiteDatabase;
     readonly provider: "sqlite";
-    readonly adapterName = "@song-react/react-native-prisma";
+    readonly adapterName = "@prisma/react-native";
     constructor(db: NativeSQLiteDatabase);
     queryRawSync(query: SqlQuery): SqlResultSet;
     executeRawSync(query: SqlQuery): number;
@@ -59,7 +59,7 @@ export declare class PrismaSQLite implements SqlDriverAdapterFactory {
     #private;
     private readonly config;
     readonly provider: "sqlite";
-    readonly adapterName = "@song-react/react-native-prisma";
+    readonly adapterName = "@prisma/react-native";
     constructor(config?: Config | string);
     private connectAdapter;
     setMigrations(migrations: readonly Migration[]): void;
