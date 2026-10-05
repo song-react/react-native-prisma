@@ -5,7 +5,7 @@ Prisma 7.9.1 的 iOS 同步客户端。通过 Nitro 调用原生 Query Compiler 
 ## 安装
 
 ```sh
-bun add --trust @prisma/client@7.9.1 @song-react/react-native-prisma@github:song-react/react-native-prisma#release
+bun add --trust @prisma/client@7.9.1 @prisma/react-native@github:song-react/react-native-prisma#release
 bun add -d prisma@7.9.1
 ```
 
@@ -16,7 +16,7 @@ bun add -d prisma@7.9.1
 ```prisma
 generator client {
   provider = "prisma-client"
-  output   = "../node_modules/@song-react/react-native-prisma/generated"
+  output   = "../node_modules/@prisma/react-native/generated"
 }
 
 datasource db {
@@ -109,7 +109,7 @@ Client、模型和同步扩展支持三个入口，指向同一个 Client：
 
 ```ts
 import { PrismaClient, queriesExtension, type User } from '@prisma/client';
-// 也可从 @song-react/react-native-prisma 或配置的 output 目录导入。
+// 也可从 @prisma/react-native 或配置的 output 目录导入。
 ```
 
 `output` 相对 schema 解析，支持工程内目录、`node_modules` 中的独立目录或能解析当前工程依赖的绝对路径。修改后执行 `prisma generate`，本包与 `@prisma/client` 会自动转发到新目录。不能覆盖已安装的 Prisma 包；自动入口绑定一个 schema。

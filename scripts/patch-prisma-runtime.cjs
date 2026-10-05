@@ -256,11 +256,11 @@ for (const _directory of new Set(
   const _original = e.readFileSync(_cli, 'utf8');
   const _source = _original
     .replace(
-      /;\/\* @song-react\/(?:expo-prisma|react-native-prisma) prepare \*\/\{[\s\S]*?\n  \}/g,
+      /;\/\* (?:@song-react\/(?:expo-prisma|react-native-prisma)|@prisma\/react-native) prepare \*\/\{[\s\S]*?\n  \}/g,
       ''
     )
     .replace(
-      /\/\* @song-react\/(?:expo-prisma|react-native-prisma) validate:start \*\/[\s\S]*?\/\* @song-react\/(?:expo-prisma|react-native-prisma) validate:end \*\//g,
+      /\/\* (?:@song-react\/(?:expo-prisma|react-native-prisma)|@prisma\/react-native) validate:start \*\/[\s\S]*?\/\* (?:@song-react\/(?:expo-prisma|react-native-prisma)|@prisma\/react-native) validate:end \*\//g,
       ''
     );
   const _start = 'await i3e({datamodel:r.datamodel,';
@@ -275,18 +275,18 @@ for (const _directory of new Set(
   const _resolve = `const _path=require("node:path");
     let _root;
     try {
-      _root=_path.resolve(_path.dirname(require.resolve("@song-react/react-native-prisma",{paths:[_path.dirname(r.schemaPath)]})),"../..");
+      _root=_path.resolve(_path.dirname(require.resolve("@prisma/react-native",{paths:[_path.dirname(r.schemaPath)]})),"../..");
     } catch(_error) {
       if(_error.code!=="MODULE_NOT_FOUND")throw _error;
     }`;
-  const _validation = `/* @song-react/react-native-prisma validate:start */{
+  const _validation = `/* @prisma/react-native validate:start */{
     ${_resolve}
     if(_root&&r.datasources[0]?.activeProvider==="sqlite") {
       if(r.otherGenerators?.some(_generator=>_generator.provider.value==="prisma-client"))throw new Error("自动 @prisma/client 入口只支持一个 Client generator");
       require(_path.join(_root,"scripts/prepare-client.cjs")).validateOutput(o,r.schemaPath);
     }
-  }/* @song-react/react-native-prisma validate:end */`;
-  const _hook = `;/* @song-react/react-native-prisma prepare */{
+  }/* @prisma/react-native validate:end */`;
+  const _hook = `;/* @prisma/react-native prepare */{
     ${_resolve}
     if(_root&&r.datasources[0]?.activeProvider==="sqlite") {
       require("node:child_process").execFileSync(process.execPath,[_path.join(_root,"scripts/prepare-client.cjs"),o,_path.join(_path.dirname(r.schemaPath),"migrations"),r.schemaPath],{stdio:"inherit"});

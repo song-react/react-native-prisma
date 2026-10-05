@@ -14,7 +14,7 @@ const request = (
   const engine = client?._engine;
   if (!engine?.requestSync) {
     throw new Error(
-      'Prisma synchronous runtime is unavailable. Install @song-react/react-native-prisma after @prisma/client.'
+      'Prisma synchronous runtime is unavailable. Install @prisma/react-native after @prisma/client.'
     );
   }
 

@@ -22,7 +22,7 @@ const validateOutput = (_output, _schemaPath) => {
   const _schema = _realPath(path.resolve(_schemaPath));
   const _paths = { paths: [path.dirname(_schema)] };
   const _client = require.resolve('@prisma/client/package.json', _paths);
-  const _library = require.resolve('@song-react/react-native-prisma', _paths);
+  const _library = require.resolve('@prisma/react-native', _paths);
   const _packages = [
     path.dirname(_client),
     path.resolve(path.dirname(_library), '../..'),
@@ -45,7 +45,7 @@ const validateOutput = (_output, _schemaPath) => {
         })
       ) !== _realPath(_client) ||
       _realPath(
-        require.resolve('@song-react/react-native-prisma', {
+        require.resolve('@prisma/react-native', {
           paths: [_directory],
         })
       ) !== _realPath(_library)
@@ -124,26 +124,26 @@ if (require.main === module) {
   if (/from 'node:/.test(client)) {
     throw new Error(`Unsupported Node import in Prisma client: ${clientPath}`);
   }
-  client += `\nexport { PrismaSQLite } from '@song-react/react-native-prisma/adapter';\nexport { queriesExtension } from '@song-react/react-native-prisma/queries';\n`;
+  client += `\nexport { PrismaSQLite } from '@prisma/react-native/adapter';\nexport { queriesExtension } from '@prisma/react-native/queries';\n`;
   fs.writeFileSync(clientPath, client);
 
   let runtime = fs
     .readFileSync(classPath, 'utf8')
     .replace('import { Buffer } from "buffer"\n', '')
     .replace(
-      /import \{ NativeQueryCompiler \} from ["']@song-react\/react-native-prisma["']/g,
-      'import { NativeQueryCompiler } from "@song-react/react-native-prisma/native"'
+      /import \{ NativeQueryCompiler \} from ["']@prisma\/react-native["']/g,
+      'import { NativeQueryCompiler } from "@prisma/react-native/native"'
     );
   if (!runtime.includes('import { NativeQueryCompiler }')) {
     runtime = runtime.replace(
       'import * as runtime from "@prisma/client/runtime/client"',
-      'import * as runtime from "@prisma/client/runtime/client"\nimport { NativeQueryCompiler } from "@song-react/react-native-prisma/native"'
+      'import * as runtime from "@prisma/client/runtime/client"\nimport { NativeQueryCompiler } from "@prisma/react-native/native"'
     );
   }
   if (!runtime.includes('import { PrismaSQLite }')) {
     runtime = runtime.replace(
       'import * as runtime from "@prisma/client/runtime/client"',
-      'import * as runtime from "@prisma/client/runtime/client"\nimport { PrismaSQLite } from "@song-react/react-native-prisma/adapter"'
+      'import * as runtime from "@prisma/client/runtime/client"\nimport { PrismaSQLite } from "@prisma/react-native/adapter"'
     );
   }
   runtime = runtime.replace(
@@ -164,11 +164,11 @@ if (require.main === module) {
 } as any` +
       runtime.slice(end);
   }
-  const migrationBlock = `// @song-react/react-native-prisma migrations:start
+  const migrationBlock = `// @prisma/react-native migrations:start
 const migrations = ${JSON.stringify(migrations)}
-// @song-react/react-native-prisma migrations:end`;
+// @prisma/react-native migrations:end`;
   runtime = runtime.replace(
-    /\/\/ @song-react\/react-native-prisma migrations:start[\s\S]*?\/\/ @song-react\/react-native-prisma migrations:end\n*/,
+    /\/\/ @prisma\/react-native migrations:start[\s\S]*?\/\/ @prisma\/react-native migrations:end\n*/,
     ''
   );
   runtime = runtime.replace(

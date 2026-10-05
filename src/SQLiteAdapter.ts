@@ -124,7 +124,7 @@ const convertError = (error: any) => {
 
 class Queryable {
   readonly provider = 'sqlite' as const;
-  readonly adapterName = '@song-react/react-native-prisma';
+  readonly adapterName = '@prisma/react-native';
 
   constructor(protected readonly db: NativeSQLiteDatabase) {}
 
@@ -344,7 +344,7 @@ class SQLiteAdapter extends Queryable implements DriverAdapter {
 
 export class PrismaSQLite implements SqlDriverAdapterFactory {
   readonly provider = 'sqlite' as const;
-  readonly adapterName = '@song-react/react-native-prisma';
+  readonly adapterName = '@prisma/react-native';
   #adapter?: SQLiteAdapter;
   #migrations: readonly Migration[] = [];
 
