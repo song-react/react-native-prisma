@@ -137,14 +137,16 @@ export const queriesExtension = () =>
         ): R {
           if (typeof _callback !== 'function') {
             throw new Error(
-              '同步事务需要回调函数，不能传入已经执行的查询结果数组'
+              'Synchronous transactions require a callback, not an array of query results'
             );
           }
           if (
             Object.prototype.toString.call(_callback) ===
             '[object AsyncFunction]'
           ) {
-            throw new Error('同步事务回调不能是 async 函数');
+            throw new Error(
+              'Synchronous transaction callbacks cannot be async'
+            );
           }
           const _owner = Prisma.getExtensionContext(this as never) as {
             _engineConfig: {
@@ -154,11 +156,16 @@ export const queriesExtension = () =>
           };
           const _adapter = _owner._engineConfig.adapter;
           if (typeof _adapter?.transactionSync !== 'function') {
-            throw new Error('当前 Prisma adapter 不支持同步事务');
+            throw new Error(
+              'Prisma adapter does not support synchronous transactions'
+            );
           }
           let _closed = false;
           const _guard = () => {
-            if (_closed) throw new Error('同步事务已经结束，不能继续使用 tx');
+            if (_closed)
+              throw new Error(
+                'Transaction is closed; tx is no longer available'
+              );
           };
           const _models = new Set(
             Object.keys(_owner._runtimeDataModel.models).map(
@@ -174,7 +181,9 @@ export const queriesExtension = () =>
                   typeof _key === 'string' &&
                   _key.startsWith('$')
                 ) {
-                  throw new Error(`同步事务中不能调用 ${_key}`);
+                  throw new Error(
+                    `Cannot call ${_key} in a synchronous transaction`
+                  );
                 }
                 const _value = Reflect.get(_target, _key, _receiver);
                 if (typeof _value === 'function') {

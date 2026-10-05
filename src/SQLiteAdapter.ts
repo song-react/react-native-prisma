@@ -229,7 +229,9 @@ const _upgradeLegacyMigrations = (
         _item => _item.name === _row.migration_name
       );
       if (!_migration)
-        throw new Error(`旧数据库迁移 ${_row.migration_name} 缺少对应的 SQL`);
+        throw new Error(
+          `Missing SQL for legacy migration ${_row.migration_name}`
+        );
       _db.query(
         'UPDATE "_prisma_migrations" SET "checksum" = ?, "rolled_back_at" = ?, "applied_steps_count" = ? WHERE "id" = ?',
         [
@@ -388,16 +390,16 @@ export class PrismaSQLite implements SqlDriverAdapterFactory {
         'then' in _result &&
         typeof _result.then === 'function'
       ) {
-        throw new Error('同步事务回调不能返回 Promise 或使用 await');
+        throw new Error(
+          'Synchronous transaction callbacks cannot return a Promise or use await'
+        );
       }
       _transaction.commitSync();
       return _result;
     } catch (_error) {
       try {
         _transaction.rollbackSync();
-      } catch {
-        // 保留导致事务失败的原始错误。
-      }
+      } catch {}
       throw _error;
     }
   }
