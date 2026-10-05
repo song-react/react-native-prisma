@@ -50,38 +50,56 @@ model User {
 
 ```tsx
 import { PrismaClient, queriesExtension } from '@prisma/client';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 
 export const db = new PrismaClient().$extends(queriesExtension());
 
 export const PrismaProvider = ({
   children,
-  loading,
-  error,
 }: {
-  children: ReactNode;
-  loading?: ReactNode;
-  error?: (_error: Error) => ReactNode;
+  children: (
+    error: Error | null | undefined,
+    migrate: () => Promise<void>
+  ) => ReactNode;
 }) => {
-  const [_error, _setError] = useState<Error | null>();
+  const [error, setError] = useState<Error | null>();
 
-  useEffect(() => {
-    void db.$applyPendingMigrations().then(
-      () => _setError(null),
-      _cause =>
-        _setError(_cause instanceof Error ? _cause : new Error(String(_cause)))
-    );
+  const migrate = useCallback(async () => {
+    setError(undefined);
+    try {
+      await db.$applyPendingMigrations();
+      setError(null);
+    } catch (_error) {
+      setError(_error instanceof Error ? _error : new Error(String(_error)));
+    }
   }, []);
 
-  return _error === undefined
-    ? loading
-    : _error === null
-      ? children
-      : error?.(_error);
+  useEffect(() => {
+    void migrate();
+  }, [migrate]);
+
+  return children(error, migrate);
 };
 ```
 
-`new PrismaClient()` 默认使用 `Library/app.db`，沿用旧版数据库。`$applyPendingMigrations()` 包含首次连接，成功后挂载子页面；加载界面传入 `loading`，失败界面由 `error(error)` 提供。需要重试时重新挂载 Provider。
+`new PrismaClient()` 默认使用 `Library/app.db`，沿用旧版数据库。`$applyPendingMigrations()` 包含首次连接。Provider 将状态交给 `children(error, migrate)`，由外部渲染：`undefined` 表示加载中，`null` 表示成功，`Error` 表示失败；调用 `migrate()` 重试。
+
+```tsx
+import { Text } from 'react-native';
+import { PrismaProvider } from '../components/providers/PrismaProvider';
+
+<PrismaProvider>
+  {(error, migrate) =>
+    error === undefined ? (
+      <Text>数据库加载中</Text>
+    ) : error === null ? (
+      <Text>数据库已就绪</Text>
+    ) : (
+      <Text onPress={migrate}>数据库初始化失败：{error.message}，点击重试</Text>
+    )
+  }
+</PrismaProvider>;
+```
 
 初始化后直接同步查询：
 
